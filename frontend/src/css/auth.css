@@ -1,0 +1,55 @@
+.auth-page {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+}
+
+.auth-page form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.auth-page input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.auth-page button {
+    width: 256px;
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    transition: background-color 0.3s;
+    align-self: center;
+}
+
+.login-page button:hover {
+    background-color: #0056b3;
+}
+
+.auth-page p {
+    font-size: 14px;
+    color: #888;
+}
+
+.auth-page p.error {
+    color: red;
+}
+
+.auth-page p a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.auth-page p a:hover {
+    text-decoration: underline;
+}
