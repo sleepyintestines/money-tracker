@@ -28,10 +28,12 @@ export function Camera(){
 
     const [isDragging, setIsDragging] = useState(false);
     const [lastMousePos, setLastMousePos] = useState({x: 0, y: 0});
+    const [lastWheel, setLastWheel] = useState(0);
 
     // handles zoom in/out logic
     const handleWheel = (e) => {
         e.preventDefault();
+        setLastWheel(Date.now());
         setCamera((prev) => {
             // calculates new zoom
             const zoomIntensity = 0.0015;
@@ -123,6 +125,7 @@ export function Camera(){
     return{
         camera, 
         MIN_SCALE,
+        lastWheel,
         handleCameraDown,
         handleCameraMove,
         handleCameraUp

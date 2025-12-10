@@ -24,6 +24,7 @@ export default function useCoinlings(count){
                 targetTop,
                 targetLeft,
                 duration: 3 + Math.random() * 2,
+                paused: false
             });
         }
 
@@ -46,7 +47,7 @@ export default function useCoinlings(count){
                         const dy = p.targetTop - p.top;
                         const distance = Math.sqrt(dx * dx + dy * dy);
 
-                        if(p.dragging) return p;
+                        if(p.dragging || p.paused) return p;
 
                         // waits before generating a new random target
                         if(distance < 1 && !p.waiting){
@@ -91,7 +92,7 @@ export default function useCoinlings(count){
 
         // cleanup
         return () => intervals.forEach(clearInterval);
-    }, [positions.length]);
+    }, [positions]);
 
     return{positions, setPositions};
 }

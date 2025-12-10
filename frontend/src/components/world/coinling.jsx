@@ -1,31 +1,47 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, forwardRef } from "react"
 
-function coinling({ position, onMove, onDragEnd, canDrag = true}){
+const coinling = forwardRef(function Coinling({ position, onMove, onDragEnd, onClick, canDrag = true}, ref){
+    const internalRef = useRef(null);
+
+    const setRef = (el) => {
+        internalRef.current = el;
+        if (ref) ref(el);
+    };
     const [dragging, setDragging] = useState(false);
     const [offset, setOffset] = useState({x: 0, y: 0});
 
     const {top, left, targetTop, targetLeft, duration} = position;
     const isMoving = Math.abs(left - targetLeft) > 0.5 || Math.abs(top - targetTop) > 0.5;
 
+    const hasMovedRef = useRef(false);
+    const suppressClickRef = useRef(false);
+
+    const { paused } = position;
+
     // handles when coinling is clicked 
     const handleMouseDown = (e) => {
+        // prevents drag if zoomed in (if canDrag = false then is zoomed in)
+        if (!canDrag) return;
+
         e.stopPropagation();
         e.preventDefault();
-
-        // prevents drag if zoomed in (if canDrag = false then is zoomed in)
-        if(!canDrag) return;
         
-        const rect = e.target.getBoundingClientRect();
+        const rect = internalRef.current.getBoundingClientRect();
 
         // match the location of the mouse when dragging
         setOffset({x: e.clientX - rect.left, y: e.clientY - rect.top});
         setDragging(true);
+
+        hasMovedRef.current = false;
+        suppressClickRef.current = false;
     }
 
     // logic for dragging and dropping coinlings
     useEffect(() => {
         const handleMouseMove = (e) => {
             if(!dragging) return;
+
+            hasMovedRef.current = true;
 
             // keeps coinling draggable inside field boundaries only
             const field = document.querySelector(".field");
@@ -42,8 +58,17 @@ function coinling({ position, onMove, onDragEnd, canDrag = true}){
         // drop coinling
         const handleMouseUp = () => {
             if(dragging){
+                const moved = !!hasMovedRef.current;
+
                 setDragging(false);
                 onDragEnd?.();
+
+                if (moved) {
+                    suppressClickRef.current = true;
+                }
+
+                hasMovedRef.current = false;
+                onDragEnd?.(moved);
             }
         }
 
@@ -58,23 +83,34 @@ function coinling({ position, onMove, onDragEnd, canDrag = true}){
 
     return (
         <img
+            ref={setRef}
             src="/sprites/coinling.png"
             alt="coinling"
             className={`coinling ${isMoving ? "coinling-moving" : ""}`}
             style={{
                 top: `${top}%`,
                 left: `${left}%`,
-                transition: dragging
+                transition: dragging || paused
                     ? "none"
                     : `top ${duration}s linear, left ${duration}s linear`,
                 position: "absolute",
                 cursor: canDrag ? "grab" : "default",
-                pointerEvents: canDrag ? "auto" : "none",
+                pointerEvents: "auto",
             }}
             onMouseDown={handleMouseDown}
+            onClick={(e) => {
+                if (suppressClickRef.current) {
+                    suppressClickRef.current = false;
+                    e.stopPropagation();
+                    e.preventDefault();
+                    return;
+                }
+
+                onClick?.(e);
+            }}
             draggable={false}
         />
     );
-}
+});
 
 export default coinling;

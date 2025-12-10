@@ -1,0 +1,99 @@
+.coinling-dialogue-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.coinling-dialogue {
+    background: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    min-width: 260px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+}
+
+.coinling-dialogue-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.coinling-dialogue-line {
+    margin-top: 8px;
+    font-size: 14px;
+}
+
+.coinling-speech-bubble {
+    display: inline-block;
+    max-width: 220px;
+    padding: 8px 12px;
+    background: #ffffff;
+    color: #111;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 12px;
+    line-height: 1.2;
+    position: relative;
+}
+
+.coinling-speech-bubble.above::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -8px;
+    border-width: 8px 8px 0 8px;
+    border-style: solid;
+    border-color: #ffffff transparent transparent transparent;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.08));
+}
+
+.coinling-speech-bubble.below::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%) rotate(180deg);
+    top: -8px;
+    border-width: 8px 8px 0 8px;
+    border-style: solid;
+    border-color: #ffffff transparent transparent transparent;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.08));
+}
+
+.coinling-dialogue-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.coinling-name {
+    font-size: 13px;
+}
+
+.coinling-name-input {
+    font-size: 13px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.coinling-dialogue-line {
+    font-size: 12px;
+    color: #222;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.coinling-speech-container {
+    cursor: default;
+}

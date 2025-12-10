@@ -4,6 +4,8 @@ import User from "../schemas/User.js"
 import Coinling from "../schemas/Coinling.js"
 import Village from "../schemas/Village.js"
 import {protect} from "../middleware/authm.js"
+import { randomPersonality, dialoguesFor } from "../utils/generateDialogue.js"
+import { randomName } from "../utils/generateName.js"
 
 const router = express.Router();
 
@@ -41,7 +43,14 @@ async function ensureCoinlingCount(userId, desiredCount){
             }
 
             // create coinling in the chosen village
-            await Coinling.create({user: userId, village: chosen._id});
+            const personality = randomPersonality();
+            await Coinling.create({
+                user: userId,
+                village: chosen._id,
+                name: randomName(),
+                personality,
+                dialogues: dialoguesFor(personality),
+            });
         }
 
         return;

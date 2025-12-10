@@ -2,6 +2,8 @@ import express from "express"
 import Coinling from "../schemas/Coinling.js"
 import Village from "../schemas/Village.js"
 import { protect } from "../middleware/authm.js"
+import { randomPersonality, dialoguesFor } from "../utils/generateDialogue.js"
+import { randomName } from "../utils/generateName.js"
 
 const router = express.Router();
 
@@ -31,48 +33,33 @@ router.delete("/:id", protect, async (req, res) => {
     }
 });
 
-// assign coinling to village
-router.post("/", protect, async (req, res) => {
-    try {
-        // fetch all user villages
-        const villages = await Village.find({user: req.user});
-        let chosen = null;
+// rename coinling
+router.patch("/:id/name", protect, async (req, res) => {
+    try{
+        const userId = req.user;
+        const {id} = req.params;
+        const {name} = req.body;
 
-        // try to find an available village
-        for (const v of villages) {
-            const count = await Coinling.countDocuments({village: v._id, dead: false});
-            if (count < v.capacity) {
-                chosen = v;
-                break;
-            }
+        if (!name || typeof name !== "string" || name.trim().length === 0) {
+            return res.status(400).json({ error: "Invalid name!" });
         }
 
-        // if none are available, auto-create a new village
-        if (!chosen) {
-            // generate starting positions
-            const leftPercent = Math.floor(Math.random() * 80) + 10; 
-            const topPercent = Math.floor(Math.random() * 80) + 10;
+        // only update if it belongs to current user
+        const coinling = await Coinling.findOneAndUpdate(
+            { _id: id, user: userId },
+            { name: name.trim() },
+            { new: true }
+        );
 
-            chosen = await Village.create({
-                user: req.user,
-                leftPercent,
-                topPercent
-            });
+        if (!coinling) {
+            return res.status(404).json({ error: "Goober not found or unauthorized!" });
         }
 
-        // finally create coinling
-        const coinling = new Coinling({
-            user: req.user,
-            village: chosen._id,
-            rarity: req.body.rarity
-        });
-
-        await coinling.save();
-        res.status(201).json(coinling);
-
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+        res.json(coinling);
+    }catch (err){
+        res.status(500).json({message: err.message});
     }
-});
+
+})
 
 export default router; 

@@ -4,6 +4,19 @@ const  coinlingSchema = new mongoose.Schema({
     user: {type: mongoose.Schema.Types.ObjectId, ref: "User", required: true},
     village: { type: mongoose.Schema.Types.ObjectId, ref: "Village", required: true },
     rarity: {type: String, enum: ["common", "rare", "legendary"]},
+    name: { type: String, required: true, default: "NPC" },
+    personality: {
+        type: String,
+        enum: [
+            "cheerful",
+            "grumpy",
+            "mysterious",
+            "shy",
+            "talkative",
+        ],
+        required: true,
+    },
+    dialogues: { type: [String], default: [] },
     dead: {type: Boolean, default: false},
 }, {timestamps: true});
 
