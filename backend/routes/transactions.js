@@ -2,6 +2,7 @@ import express from "express"
 import Transaction from "../schemas/Transaction.js"
 import User from "../schemas/User.js"
 import Coinling from "../schemas/Coinling.js"
+import Village from "../schemas/Village.js"
 import {protect} from "../middleware/authm.js"
 
 const router = express.Router();
@@ -14,7 +15,33 @@ async function ensureCoinlingCount(userId, desiredCount){
     if(aliveCount < desiredCount){
         const need = desiredCount - aliveCount;
         for(let i = 0; i < need; i++){
-            await Coinling.create({user: userId});
+            // fetch all of user's villages
+            const villages = await Village.find({ user: userId });
+            let chosen = null;
+
+            // look for available villages
+            for (const v of villages) {
+                const count = await Coinling.countDocuments({village: v._id, dead: false});
+                if (count < v.capacity) {
+                    chosen = v;
+                    break;
+                }
+            }
+
+            // if none available, auto-create new village
+            if (!chosen) {
+                // generate starting positions
+                const leftPercent = Math.floor(Math.random() * 80) + 10; 
+                const topPercent = Math.floor(Math.random() * 80) + 10;
+                chosen = await Village.create({
+                    user: userId,
+                    leftPercent,
+                    topPercent
+                });
+            }
+
+            // create coinling in the chosen village
+            await Coinling.create({user: userId, village: chosen._id});
         }
 
         return;

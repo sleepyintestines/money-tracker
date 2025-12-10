@@ -2,6 +2,7 @@ import mongoose from "mongoose"
 
 const  coinlingSchema = new mongoose.Schema({
     user: {type: mongoose.Schema.Types.ObjectId, ref: "User", required: true},
+    village: { type: mongoose.Schema.Types.ObjectId, ref: "Village", required: true },
     rarity: {type: String, enum: ["common", "rare", "legendary"]},
     dead: {type: Boolean, default: false},
 }, {timestamps: true});

@@ -13,8 +13,6 @@ export const apiFetch = async (path, { body, method = "GET", token, headers = {}
             },
             data: body || undefined, 
         });
-        console.log("API response:", res);
-        console.log("API Response Data:", res.data);
         return res.data;
     } catch (err) {
         console.error("API Error:", err);

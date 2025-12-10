@@ -1,15 +1,13 @@
-import useCoinlings from "./useCoinlings.js"
-import Coinling from "./coinling.jsx"
-import {Camera} from "./camera.js"
+import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { Camera } from "./camera.js"
+import { apiFetch } from "../../fetch.js"
 
-import "../../css/overworld.css"
+import "../../css/overworld.css";
 
-function overworld({ coinlings = [] }){
-    const count = coinlings.length;
-    const{positions, setPositions} = useCoinlings(count);
-
-    // camera hook provides viewport dimensions and zoom/pan controls that update on window resize
-    const{
+function overworld({coinlings}) {
+    const [villages, setVillages] = useState([]);
+    const {
         camera,
         MIN_SCALE,
         handleCameraDown,
@@ -17,20 +15,39 @@ function overworld({ coinlings = [] }){
         handleCameraUp,
     } = Camera();
 
-    // dynamic cursor style 
+    const navigate = useNavigate();
+
+    const fetchVillages = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            const data = await apiFetch("/villages", { token });
+
+            setVillages(data);
+        } catch (err) {
+            console.error("Failed to load villages:", err);
+        }
+    };
+
+    useEffect(() => {
+        fetchVillages();
+    }, []);
+
+    // refetch villages when coinlings change
+    useEffect(() => {
+        fetchVillages();
+    }, [coinlings]);
+
     const cursorStyle = camera.scale > MIN_SCALE + 0.001 ? "grab" : "default";
 
-    return(
-        // field container: responsive viewport that fills entire screen and adapts to window resize
+    return (
         <div
             className="field"
             onMouseDown={handleCameraDown}
             onMouseMove={handleCameraMove}
             onMouseUp={handleCameraUp}
             onMouseLeave={handleCameraUp}
-            style={{ cursor: cursorStyle }}
+            style={{cursor: cursorStyle}}
         >
-            {/* world layer: 3x viewport size with camera transform applied for responsive pan/zoom */}
             <div
                 style={{
                     width: "300vw",
@@ -40,33 +57,39 @@ function overworld({ coinlings = [] }){
                     position: "relative",
                 }}
             >
-                {positions.map((p, i) => (
-                    <Coinling
-                        key={i}
-                        position={p}
-                        canDrag={camera.scale <= MIN_SCALE + 0.001}
-                        onMove={(newLeftPercent, newTopPercent) => {
-                            setPositions((prev) =>
-                                prev.map((pos, idx) =>
-                                    idx === i ? {
-                                        ...pos,
-                                        dragging: true,
-                                        left: Math.min(Math.max(newLeftPercent, 0), 100),
-                                        top: Math.min(Math.max(newTopPercent, 0), 100),
-                                    } : pos
-                                )
-                            );
-                        }}
-
-                        onDragEnd={() => {
-                            setPositions((prev) =>
-                                prev.map((pos, idx) =>
-                                    idx === i ? { ...pos, dragging: false } : pos
-                                )
-                            );
-                        }}
-                    />
-                ))}
+                {villages.map((v) => {
+                    // place village by percent
+                    const sizePercent = 5; 
+                    const left = Math.min(Math.max(v.leftPercent, 0), 100);
+                    const top = Math.min(Math.max(v.topPercent, 0), 100);
+                    const style = {
+                        position: "absolute",
+                        left: `${left}%`,
+                        top: `${top}%`,
+                        width: `${sizePercent}%`,
+                        height: `${sizePercent}%`,
+                        transform: `translate(-50%, -50%)`, // center
+                        background: "black",
+                        cursor: "pointer",
+                        borderRadius: "6px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "white",
+                        fontSize: "0.9rem",
+                        userSelect: "none",
+                    };
+                    return (
+                        <div
+                            key={v._id}
+                            title={v.name || "Village"}
+                            style={style}
+                            onClick={() => navigate(`/villages/${v._id}`)}
+                        >
+                            {v.name || "V"}
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

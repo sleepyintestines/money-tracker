@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react"
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom"
 
 import Login from "../pages/auth/login.jsx"
 import Register from "../pages/auth/register.jsx"
 
 import Overworld from "../components/world/overworld.jsx"
+import View from "../components/world/view.jsx"
 
 import Add from "../pages/functions/add.jsx"
 import Subtract from "../pages/functions/subtract.jsx"
@@ -14,9 +15,9 @@ import { apiFetch } from "../fetch.js"
 
 import "../css/app.css"
 
-function App() {
+function Content() {
   // gets user from localstorage
-  const  [user, setUser] = useState(() => {
+  const [user, setUser] = useState(() => {
     const stored = localStorage.getItem("userInfo");
     return stored ? JSON.parse(stored) : null;
   });
@@ -27,6 +28,11 @@ function App() {
   const [modal, setModal] = useState(null);
   const [hidden, setHidden] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const goToField = () => {
+    navigate("/");
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -67,13 +73,13 @@ function App() {
 
   // adds an amount to the balance and records the transaction
   const handleAdd = async (amount, date, notes) => {
-    if(!user) return;
+    if (!user) return;
 
-    try{
+    try {
       const res = await apiFetch("/transactions", {
         method: "POST",
         token: user.token,
-        body: {type: "add", amount, date, notes},
+        body: { type: "add", amount, date, notes },
       });
 
       // saves new transaction
@@ -81,12 +87,12 @@ function App() {
       setTransactions(prev => [newTx, ...prev]);
       // update balance
       setBalance(res.balance);
-      setUser(prev => ({...prev, balance: res.balance}));
+      setUser(prev => ({ ...prev, balance: res.balance }));
 
       // refresh & update amount of coinlings
-      const g = await apiFetch("/coinling", {token: user.token});
+      const g = await apiFetch("/coinling", { token: user.token });
       setCoinlings(g);
-    }catch (err){
+    } catch (err) {
       console.error(err);
       throw err;
     }
@@ -100,7 +106,7 @@ function App() {
       const res = await apiFetch("/transactions", {
         method: "POST",
         token: user.token,
-        body: { type: "subtract", amount, date, notes, worthIt }, 
+        body: { type: "subtract", amount, date, notes, worthIt },
       });
 
       // saves new transaction
@@ -120,25 +126,60 @@ function App() {
   };
 
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* login */}
-        <Route path="/login" element={
-          user ? (<Navigate to="/" />) : (<Login onLogin={(u) => {setIsLoading(true); setUser(u);}}/>)
-        }/>
+    <Routes>
 
-        {/* register */}
-        <Route path="/register" element={
-          user ? (<Navigate to="/" />) : (<Register onRegister={(u) => {setIsLoading(true); setUser(u);}}/>)
-        }/>
+      {/* login */}
+      <Route
+        path="/login"
+        element={
+          user ? (
+            <Navigate to="/" />
+          ) : (
+            <Login onLogin={(u) => { localStorage.setItem("token", u.token); setIsLoading(true); setUser(u); }} />
+          )
+        }
+      />
 
-        {/* main page */}
-        <Route path="/" element={
+      {/* register */}
+      <Route
+        path="/register"
+        element={
+          user ? (
+            <Navigate to="/" />
+          ) : (
+              <Register onRegister={(u) => { localStorage.setItem("token", u.token); setIsLoading(true); setUser(u); }} />
+          )
+        }
+      />
+
+      {/* village page */}
+      <Route
+        path="/villages/:id"
+        element={
+          !user ? (
+            <Navigate to="/login" />
+          ) : (
+            <div>
+              <View />
+              <div className="taskbar">
+                <button onClick={goToField}>
+                  <img src="/icons/taskbar-icons/back-arrow.png" />
+                </button>
+              </div>
+            </div>
+          )
+        }
+      />
+
+      {/* MAIN APP (Field) */}
+      <Route
+        path="/"
+        element={
           !user ? (
             <Navigate to="/login" />
           ) : isLoading ? (
             <div className="loading-screen">Loading...</div>
-          ): (
+          ) : (
             <>
               <Overworld coinlings={coinlings} />
 
@@ -160,52 +201,44 @@ function App() {
               )}
 
               {!hidden && (
-                <>
-                  <div className="app">
-                    <h1 className="balance">₱ {balance.toLocaleString()}</h1>
-                    <div className="controls">
-                      <button onClick={() => setModal("add")}>
-                        Add
-                      </button>
-                      <button onClick={() => setModal("subtract")}>
-                        Subtract
-                      </button>
-                      <button onClick={() => setModal("history")}>
-                        History
-                      </button>
-                    </div>
+                <div className="app">
+                  <h1 className="balance">₱ {balance.toLocaleString()}</h1>
+                  <div className="controls">
+                    <button onClick={() => setModal("add")}>Add</button>
+                    <button onClick={() => setModal("subtract")}>Subtract</button>
+                    <button onClick={() => setModal("history")}>History</button>
                   </div>
-                </>
+                </div>
               )}
 
               <div className="taskbar">
                 <button onClick={() => setHidden(!hidden)}>
                   {hidden ? (
-                    <img
-                      src="/icons/taskbar-icons/eye-closed-icon.png"
-                      alt="show"
-                      width={24}
-                    />
+                    <img src="/icons/taskbar-icons/eye-closed-icon.png" />
                   ) : (
-                    <img
-                      src="/icons/taskbar-icons/eye-icon.png"
-                      alt="show"
-                      width={24}
-                    />
+                    <img src="/icons/taskbar-icons/eye-icon.png" />
                   )}
                 </button>
                 <button onClick={logout}>
-                  <img src="/icons/taskbar-icons/logout-icon.png"/>
+                  <img src="/icons/taskbar-icons/logout-icon.png" />
                 </button>
               </div>
-            </> 
+            </>
           )
-        }/>
-      </Routes>
+        }
+      />
+
+    </Routes>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Content />
     </BrowserRouter>
-  )
+  );
 }
 
 export default App
 
- 
