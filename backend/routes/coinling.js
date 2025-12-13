@@ -1,6 +1,7 @@
 import express from "express"
 import Coinling from "../schemas/Coinling.js"
 import { protect } from "../middleware/authm.js"
+import Village from "../schemas/Village.js";
 
 const router = express.Router();
 
@@ -57,6 +58,49 @@ router.patch("/:id/name", protect, async (req, res) => {
         res.status(500).json({message: err.message});
     }
 
-})
+});
+
+// move coinlings across villages
+router.patch("/:id/village", protect, async (req, res) => {
+    try{
+        const {villageId} = req.body;
+        const coinling = await Coinling.findOne({
+            _id: req.params.id,
+            user: req.user,
+            dead: false
+        });
+
+        if(!coinling){
+            return res.status(404).json({error: "Coinling not found!"});
+        }
+
+        // validate target village
+        const destination = await Village.findOne({
+            _id: villageId,
+            user: req.user,
+            deleted: false
+        });
+
+        if(!destination){
+            return res.status(404).json({error: "Destination not found!"});
+        }
+
+        // check target village capacity
+        const count = await Coinling.countDocuments({
+            village: villageId,
+            dead: false
+        });
+
+        if(count >= destination.capacity){
+            return res.status(400).json({error: "Village is full!"});
+        }
+
+        coinling.village = villageId;
+        await coinling.save();
+        res.json({coinling});
+    }catch (err){
+        res.status(500).json({error: err.message});
+    }
+});
 
 export default router; 

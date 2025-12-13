@@ -30,6 +30,7 @@ function Content() {
   const [isLoading, setIsLoading] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
   const [hideHeader, setHideHeader] = useState(false);
+  const [show, setShow] = useState(true);
   const navigate = useNavigate();
 
   const goToField = () => {
@@ -174,6 +175,11 @@ function Content() {
     }
   };
 
+  // toggle to show coinlings residing in villages
+  const toggleDisplay = () => {
+    setShow(prev => !prev);
+  };
+
   return (
     <Routes>
 
@@ -250,6 +256,7 @@ function Content() {
                 onRefresh={refreshCoinlings} 
                 deleteMode={deleteMode} 
                 onDeleteVillage={deleteVillage}
+                show={show}
               />
 
               {modal === "add" && (
@@ -288,16 +295,23 @@ function Content() {
                     <img src="/icons/taskbar-icons/eye-icon.png" />
                   )}
                 </button>
-                    <button onClick={createNewVillage} disabled={deleteMode}>
-                      <img src="/icons/taskbar-icons/create.png" />
-                    </button>
-                    <button onClick={toggleDeleteMode}>
-                      {deleteMode ? (
-                        <img src="/icons/taskbar-icons/delete-on.png" />
-                      ) : (
-                        <img src="/icons/taskbar-icons/delete.png" />
-                      )}
-                    </button>
+                <button onClick={toggleDisplay}>
+                  {show ? (
+                    <img src="/icons/taskbar-icons/eye-icon.png" />
+                  ) : (
+                    <img src="/icons/taskbar-icons/eye-closed-icon.png" />
+                  )}
+                </button>
+                <button onClick={createNewVillage} disabled={deleteMode}>
+                  <img src="/icons/taskbar-icons/create.png" />
+                </button>
+                <button onClick={toggleDeleteMode}>
+                  {deleteMode ? (
+                      <img src="/icons/taskbar-icons/delete-on.png" />
+                  ) : (
+                      <img src="/icons/taskbar-icons/delete.png" />
+                  )}
+                </button>
                 <button onClick={logout}>
                   <img src="/icons/taskbar-icons/logout-icon.png" />
                 </button>

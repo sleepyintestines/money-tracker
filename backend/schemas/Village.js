@@ -8,6 +8,6 @@ const villageSchema = new mongoose.Schema({
     capacity: { type: Number, default: 2 },
     createdAt: { type: Date, default: Date.now },
     deleted: {type: Boolean, default: false}
-}, { timestamps: true });
+}, {timestamps: true});
 
 export default mongoose.model("Village", villageSchema);

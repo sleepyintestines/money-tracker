@@ -1,17 +1,20 @@
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { Camera } from "./camera.js"
 import { apiFetch } from "../../fetch.js"
 
 import "../../css/overworld.css";
 
-function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage}) {
+function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = false}) {
     const [villages, setVillages] = useState([]);
 
     // for merging villages
     const [residentAmount, setResidentAmount] = useState({});
     const [draggingVillage, setDraggingVillage] = useState(null);
     const [hoveredVillage, setHoveredVillage] = useState(null);
+    const [draggingCoinling, setDraggingCoinling] = useState(null);
+    const [coinlingDragOffset, setCoinlingDragOffset] = useState({x: 0, y: 0});
+    const [showTooltip, setShowTooltip] = useState(null);
 
     const {
         camera,
@@ -24,6 +27,7 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage}) {
     const dragOffsetRef = useRef({ x: 0, y: 0 });
     const suppressClickRef = useRef(false);
     const navigate = useNavigate();
+    const fieldRef = useRef(null);
 
     const fetchVillages = async () => {
         try {
@@ -127,7 +131,7 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage}) {
         fetchCount();
     }, [villages, coinlings]);
 
-    // drag logic
+    // drag logic (villages)
     useEffect(() => {
         if (!draggingVillage) return;
 
@@ -183,6 +187,94 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage}) {
         };
     }, [draggingVillage, villages]);
 
+    // move coinlings across villages
+    const moveCoinling = async (coinlingId, villageId) => {
+        try{
+            const token = localStorage.getItem("token");
+            await apiFetch(`/coinling/${coinlingId}/village`, {
+                method: "PATCH",
+                body: {villageId},
+                token
+            });
+        }catch (err){
+            alert(err.message || "Cannot move coinling!");
+        }
+    }
+
+    const handleCoinlingMouseDown = useCallback((e, coinling, village) => {
+        if (deleteMode) return; // don't drag in delete mode
+
+        e.stopPropagation();
+        const rect = e.currentTarget.getBoundingClientRect();
+        setCoinlingDragOffset({
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        });
+        setDraggingCoinling({...coinling, sourceVillage: village});
+    }, [deleteMode]);
+
+    const handleCoinlingMove = useCallback((e) => {
+        if (!draggingCoinling) return;
+
+        const fieldRect = fieldRef.current?.getBoundingClientRect();
+        if (!fieldRect) return;
+        const leftPercent = ((e.clientX - fieldRect.left - coinlingDragOffset.x) / fieldRect.width) * 100;
+        const topPercent = ((e.clientY - fieldRect.top - coinlingDragOffset.y) / fieldRect.height) * 100;
+
+        setDraggingCoinling(prev => ({
+            ...prev,
+            leftPercent,
+            topPercent
+        }));
+    }, [draggingCoinling, coinlingDragOffset]);
+
+    const handleCoinlingMouseUp = useCallback(async (e) => {
+        if (!draggingCoinling) return;
+
+        // find which village the coinling was dropped on
+        const targetVillage = villages.find(v => {
+            const distance = Math.sqrt(
+                Math.pow(v.leftPercent - draggingCoinling.leftPercent, 2) +
+                Math.pow(v.topPercent - draggingCoinling.topPercent, 2)
+            );
+            return distance < 5;
+        });
+
+        // if dropped on a different village, move it
+        if (targetVillage && targetVillage._id !== draggingCoinling.sourceVillage._id) {
+            try {
+                await moveCoinling(draggingCoinling._id, targetVillage._id);
+                onRefresh();
+            } catch (error) {
+                console.error("Failed to move coinling ->", error);
+                alert("Failed to move coinling. Village might be full.");
+            }
+        }
+
+        setDraggingCoinling(null);
+    }, [draggingCoinling, villages, onRefresh]);
+
+    // coinling drag logic
+    useEffect(() => {
+        if (!draggingCoinling) return;
+
+        const handleMouseMove = (e) => {
+            handleCoinlingMove(e);
+        };
+
+        const handleMouseUp = (e) => {
+            handleCoinlingMouseUp(e);
+        };
+
+        document.addEventListener("mousemove", handleMouseMove);
+        document.addEventListener("mouseup", handleMouseUp);
+
+        return () => {
+            document.removeEventListener("mousemove", handleMouseMove);
+            document.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [draggingCoinling, handleCoinlingMove, handleCoinlingMouseUp]);
+
     const cursorStyle = camera.scale > MIN_SCALE + 0.001 ? "grab" : "default";
 
     return (
@@ -195,6 +287,7 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage}) {
             style={{cursor: cursorStyle}}
         >
             <div
+                ref={fieldRef}
                 style={{
                     width: "300vw",
                     height: "300vh",
@@ -212,68 +305,168 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage}) {
                     return (
                         <div
                             key={v._id}
-                            title={`${v.name || "Village"} (${count}/${v.capacity})`}
-                            onMouseDown={(e) => {
-                                if(deleteMode) return; 
-                                handleVillageMouseDown(e, v);
-                            }}
-                            onClick={(e) => {
-                                if(suppressClickRef.current) {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                    suppressClickRef.current = false;
-                                    return;
-                                }
-
-                                if(deleteMode){
-                                    e.stopPropagation();
-                                    onDeleteVillage(v._id);
-                                    return;
-                                }
-
-                                navigate(`/village/${v._id}`);
-                            }}
                             style={{
                                 position: "absolute",
                                 left: `${v.leftPercent}%`,
                                 top: `${v.topPercent}%`,
-                                width: "5%",
-                                height: "5%",
                                 transform: "translate(-50%, -50%)",
-                                background: deleteMode
-                                    ? (count === 0 ? "#ef4444" : "#666")
-                                    : (canMerge ? "#22c55e" : isHovered ? "#eab308" : "black"),
-                                cursor: deleteMode
-                                    ? (count === 0 ? "pointer" : "not-allowed")
-                                    : (isDragging ? "grabbing" : "grab"),
-                                borderRadius: "6px",
-                                display: "flex",
-                                flexDirection: "column",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                color: "white",
-                                border: canMerge
-                                    ? "3px solid #16a34a"
-                                    : isHovered
-                                        ? "3px solid #ca8a04"
-                                        : deleteMode && count === 0
-                                            ? "3px solid #dc2626"
-                                            : "none",
-                                transition: isDragging ? "none" : "background 0.2s",
-                                opacity: deleteMode && count > 0 ? 0.5 : 1
                             }}
                         >
-                            <div>{v.name || "V"}</div>
-                            <div style={{ fontSize: "0.7rem", marginTop: "2px" }}>
-                                {count}/{v.capacity}
-                            </div>
+                            <img 
+                                src="/sprites/village-sprites/temp.png"
+                                alt={v.name || "Village"}
+                                onMouseDown={(e) => {
+                                    if (deleteMode) return;
+                                    handleVillageMouseDown(e, v);
+                                }}
+                                onMouseEnter={() => setShowTooltip(v._id)}
+                                onMouseLeave={() => setShowTooltip(null)}
+                                onClick={(e) => {
+                                    if (suppressClickRef.current) {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        suppressClickRef.current = false;
+                                        return;
+                                    }
+
+                                    if (deleteMode) {
+                                        e.stopPropagation();
+                                        onDeleteVillage(v._id);
+                                        return;
+                                    }
+
+                                    navigate(`/village/${v._id}`);
+                                }}
+                                style={{
+                                    width: "128px",
+                                    height: "128px",
+                                    imageRendering: "pixelated",
+                                    cursor: deleteMode
+                                        ? (count === 0 ? "pointer" : "not-allowed")
+                                        : (isDragging ? "grabbing" : "grab"),
+                                    filter: deleteMode
+                                        ? (count === 0
+                                            ? "drop-shadow(0 0 8px rgba(239, 68, 68, 0.8))"
+                                            : "grayscale(50%) brightness(0.6)")
+                                        : (canMerge
+                                            ? "drop-shadow(0 0 8px rgba(34, 197, 94, 0.8))"
+                                            : isHovered
+                                                ? "drop-shadow(0 0 8px rgba(234, 179, 8, 0.8))"
+                                                : "none"),
+                                    transition: isDragging ? "none" : "filter 0.2s",
+                                    opacity: deleteMode && count > 0 ? 0.5 : 1,
+                                    pointerEvents: "auto",
+                                }}
+                            />
+                            {showTooltip === v._id && (
+                                <div
+                                    style={{
+                                        position: "absolute",
+                                        top: "-50px",
+                                        left: "50%",
+                                        transform: "translateX(-50%)",
+                                        background: "rgba(0, 0, 0, 0.9)",
+                                        color: "white",
+                                        padding: "8px 12px",
+                                        borderRadius: "6px",
+                                        fontSize: "2rem",
+                                        whiteSpace: "nowrap",
+                                        pointerEvents: "none",
+                                        zIndex: 1000,
+                                        border: "1px solid rgba(255, 255, 255, 0.2)",
+                                    }}
+                                >
+                                    <div style={{ fontWeight: "bold", marginBottom: "2px" }}>
+                                        {v.name || "Village"}
+                                    </div>
+                                    <div style={{ fontSize: "2rem", color: "#ccc" }}>
+                                        {count}/{v.capacity}
+                                    </div>
+                                </div>
+                            )}
                             {canMerge && (
-                                <div style={{ fontSize: "0.6rem", marginTop: "2px", fontWeight: "bold" }}>
+                                <div
+                                    style={{
+                                        position: "absolute",
+                                        bottom: "-25px",
+                                        left: "50%",
+                                        transform: "translateX(-50%)",
+                                        color: "white",
+                                        padding: "4px 8px",
+                                        borderRadius: "4px",
+                                        fontSize: "0.7rem",
+                                        fontWeight: "bold",
+                                        whiteSpace: "nowrap",
+                                        pointerEvents: "none",
+                                    }}
+                                >
                                     MERGE!
                                 </div>
                             )}
                         </div>
                     );
+                })}
+                {/* render coinlings from each village */}
+                {show && villages.map(village => {
+                    const villageCoinlings = coinlings.filter(g => g.village === village._id && !g.dead);
+
+                    return villageCoinlings.map((coinling, index) => {
+                        // position coinlings around their village in a circle pattern
+                        const angle = (index / Math.max(villageCoinlings.length, 1)) * 2 * Math.PI;
+
+                        // calculate radius dynamically 
+                        const spacing = 2; // space between coinlings
+                        const minRadius = { 8: 4, 16: 5.5, 32: 7, 64: 9, 128: 12 }[village.capacity] || 4;
+                        const maxRadius = { 8: 5, 16: 7, 32: 9, 64: 12, 128: 15 }[village.capacity] || 10;
+
+                        // calculate required radius for even spacing: circumference = 2πr, spacing = circumference / count
+                        const requiredRadius = (villageCoinlings.length * spacing) / (2 * Math.PI);
+                        const radius = Math.min(maxRadius, Math.max(minRadius, requiredRadius));
+
+                        const offsetX = Math.cos(angle) * radius;
+                        const offsetY = Math.sin(angle) * radius;
+
+                        const left = village.leftPercent + offsetX;
+                        const top = village.topPercent + offsetY;
+
+                        // if coinling is being dragged, use dragging position
+                        const isBeingDragged = draggingCoinling?._id === coinling._id;
+                        const displayLeft = isBeingDragged ? draggingCoinling.leftPercent : left;
+                        const displayTop = isBeingDragged ? draggingCoinling.topPercent : top;
+
+                        return (
+                            <div
+                                key={coinling._id}
+                                onMouseDown={(e) => handleCoinlingMouseDown(e, coinling, village)}
+                                style={{
+                                    position: "absolute",
+                                    left: `${displayLeft}%`,
+                                    top: `${displayTop}%`,
+                                    width: "48px",
+                                    height: "48px",
+                                    cursor: deleteMode ? "default" : (isBeingDragged ? "grabbing" : "grab"),
+                                    zIndex: isBeingDragged ? 1000 : -10,
+                                    pointerEvents: deleteMode ? "none" : "auto",
+                                    transform: `translate(-50%, -50%) ${isBeingDragged ? "scale(2)" : "scale(1)"}`,
+                                    transition: isBeingDragged ? "none" : "transform 0.15s ease",
+                                }}
+                                title={coinling.name}
+                            >
+                                <img
+                                    src={coinling.sprite}
+                                    alt={coinling.name}
+                                    style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        imageRendering: "pixelated",
+                                        opacity: isBeingDragged ? 0.7 : 1,
+                                        filter: isBeingDragged ? "drop-shadow(0 0 8px rgba(59, 130, 246, 0.8))" : "none",
+                                    }}
+                                    draggable={false}
+                                />
+                            </div>
+                        );
+                    });
                 })}
             </div>
         </div>
