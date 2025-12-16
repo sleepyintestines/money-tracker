@@ -10,7 +10,9 @@ import View from "../components/world/view.jsx"
 import Add from "../pages/functions/add.jsx"
 import Subtract from "../pages/functions/subtract.jsx"
 import History from "../pages/functions/history.jsx"
+import Analytics from "../pages/functions/analytics.jsx"
 import Journal from "../components/journal.jsx"
+import ErrorModal from "../components/errorModal.jsx"
 
 import List from "../pages/other/list.jsx"
 
@@ -33,6 +35,7 @@ function Content() {
   const [isLoading, setIsLoading] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
   const [hideHeader, setHideHeader] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(null);
   const [show, setShow] = useState(true);
   const [list, setList] = useState([]);
 
@@ -174,7 +177,7 @@ function Content() {
       await refreshCoinlings();
     } catch (err) {
       console.error("Failed to create house ->", err);
-      alert(err.message || "Failed to create house");
+      setErrorMessage(err.message || "Failed to create house");
     }
   };
 
@@ -194,7 +197,7 @@ function Content() {
       await refreshCoinlings();
     } catch (err) {
       console.error("Failed to delete house ->", err);
-      alert(err.message || "House must be empty!");
+      setErrorMessage(err.message || "House must be empty!");
     }
   };
 
@@ -281,6 +284,7 @@ function Content() {
                 onDeleteHouse={deleteHouse}
                 show={show}
                 modal={modal}
+                onError={setErrorMessage}
               />
 
               {modal === "add" && (
@@ -297,6 +301,13 @@ function Content() {
                 <History
                   onClose={() => setModal(null)}
                   transactions={transactions}
+                  onError={setErrorMessage}
+                />
+              )}
+              {modal === "analytics" && (
+                <Analytics
+                  onClose={() => setModal(null)}
+                  onError={setErrorMessage}
                 />
               )}
               {modal === "journal" && (
@@ -323,6 +334,13 @@ function Content() {
                   }}
                   list={list}
                   type="new"
+                />
+              )}
+
+              {errorMessage && (
+                <ErrorModal
+                  onClose={() => setErrorMessage(null)}
+                  message={errorMessage}
                 />
               )}
 
@@ -363,6 +381,9 @@ function Content() {
                   )}
                 </button>
                 <button onClick={() => setModal("journal")}>
+                    <img src="/icons/taskbar-icons/logout-icon.png" />
+                </button>
+                <button onClick={() => setModal("analytics")}>
                     <img src="/icons/taskbar-icons/logout-icon.png" />
                 </button>
                 <button onClick={logout}>

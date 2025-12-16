@@ -158,6 +158,7 @@ router.get("/", protect, async (req, res) => {
         res.status(500).json({message: err.message});
     }
 });
+
 // get all categories (default + user custom)
 router.get("/categories", protect, async (req, res) => {
     try{
@@ -200,6 +201,7 @@ router.get("/categories", protect, async (req, res) => {
         res.status(500).json({message: err.message});
     }
 });
+
 // record new transaction
 router.post("/", protect, async(req, res) => {
     const {type, amount, date, notes, worthIt, category} = req.body;
@@ -278,6 +280,144 @@ router.patch("/:id", protect, async(req, res) => {
         }
 
         res.json(transaction);
+    }catch (err){
+        res.status(500).json({message: err.message});
+    }
+});
+
+// get analytics data
+router.get("/analytics/summary", protect, async(req, res) => {
+    try{
+        const userObjectId = new mongoose.Types.ObjectId(req.user);
+        
+        // helper to get start of week (Sunday)
+        const getWeekStart = (date) => {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day;
+            return new Date(d.setDate(diff));
+        };
+
+        // helper to get start of month
+        const getMonthStart = (date) => {
+            const d = new Date(date);
+            return new Date(d.getFullYear(), d.getMonth(), 1);
+        };
+
+        const now = new Date();
+        const thisWeekStart = getWeekStart(now);
+        thisWeekStart.setHours(0, 0, 0, 0);
+
+        const lastWeekStart = new Date(thisWeekStart);
+        lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+        const twoWeeksAgoStart = new Date(thisWeekStart);
+        twoWeeksAgoStart.setDate(twoWeeksAgoStart.getDate() - 14);
+
+        const threeWeeksAgoStart = new Date(thisWeekStart);
+        threeWeeksAgoStart.setDate(threeWeeksAgoStart.getDate() - 21);
+
+        const thisMonthStart = getMonthStart(now);
+        thisMonthStart.setHours(0, 0, 0, 0);
+
+        // get all transactions
+        const transactions = await Transaction.find({user: userObjectId}).lean();
+
+        // this week spending
+        const thisWeekSpent = transactions
+            .filter(t => t.type === "subtract" && new Date(t.date) >= thisWeekStart)
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        // last 3 weeks for comparison
+        const lastWeekSpent = transactions
+            .filter(t => t.type === "subtract" && new Date(t.date) >= lastWeekStart && new Date(t.date) < thisWeekStart)
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        const twoWeeksAgoSpent = transactions
+            .filter(t => t.type === "subtract" && new Date(t.date) >= twoWeeksAgoStart && new Date(t.date) < lastWeekStart)
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        const threeWeeksAgoSpent = transactions
+            .filter(t => t.type === "subtract" && new Date(t.date) >= threeWeeksAgoStart && new Date(t.date) < twoWeeksAgoStart)
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        // this month spending
+        const thisMonthSpent = transactions
+            .filter(t => t.type === "subtract" && new Date(t.date) >= thisMonthStart)
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        // this month income
+        const thisMonthIncome = transactions
+            .filter(t => t.type === "add" && new Date(t.date) >= thisMonthStart)
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        // category analysis (only for subtract/expense transactions)
+        const categoryStats = {};
+        transactions.forEach(t => {
+            if (!t.category || t.type !== "subtract") return;
+            if (!categoryStats[t.category]) {
+                categoryStats[t.category] = {count: 0, total: 0};
+            }
+            categoryStats[t.category].count++;
+            categoryStats[t.category].total += t.amount;
+        });
+
+        const mostUsedCategory = Object.entries(categoryStats)
+            .sort((a, b) => {
+                // primary sort by total amount (descending)
+                if (b[1].total !== a[1].total) {
+                    return b[1].total - a[1].total;
+                }
+                // tiebreaker: sort by count (descending)
+                return b[1].count - a[1].count;
+            })[0];
+
+        // spending by category (only subtract transactions)
+        const spendingByCategory = Object.entries(categoryStats)
+            .map(([name, data]) => ({name, amount: data.total, count: data.count}))
+            .sort((a, b) => b.amount - a.amount);
+
+        // worth it analysis
+        const worthItStats = transactions
+            .filter(t => t.type === "subtract" && t.worthIt !== undefined)
+            .reduce((acc, t) => {
+                if (t.worthIt) {
+                    acc.worthIt++;
+                    acc.worthItAmount += t.amount;
+                } else {
+                    acc.notWorthIt++;
+                    acc.notWorthItAmount += t.amount;
+                }
+                return acc;
+            }, {worthIt: 0, notWorthIt: 0, worthItAmount: 0, notWorthItAmount: 0});
+
+        res.json({
+            thisWeek: {
+                spent: thisWeekSpent,
+                start: thisWeekStart.toISOString()
+            },
+            weeklyComparison: [
+                {week: "3 weeks ago", spent: threeWeeksAgoSpent},
+                {week: "2 weeks ago", spent: twoWeeksAgoSpent},
+                {week: "Last week", spent: lastWeekSpent},
+                {week: "This week", spent: thisWeekSpent}
+            ],
+            thisMonth: {
+                spent: thisMonthSpent,
+                income: thisMonthIncome,
+                net: thisMonthIncome - thisMonthSpent,
+                start: thisMonthStart.toISOString()
+            },
+            categories: {
+                mostUsed: mostUsedCategory ? {
+                    name: mostUsedCategory[0],
+                    count: mostUsedCategory[1].count,
+                    total: mostUsedCategory[1].total
+                } : null,
+                spendingBreakdown: spendingByCategory
+            },
+            worthIt: worthItStats
+        });
     }catch (err){
         res.status(500).json({message: err.message});
     }

@@ -2,7 +2,7 @@ import { useState } from "react"
 import Modal from "../../components/modal.jsx"
 import { apiFetch } from "../../fetch.js"
 
-function history({ onClose, transactions }) {
+function history({ onClose, transactions, onError }) {
     const [selectedTx, setSelectedTx] = useState(null);
     const [isUpdating, setIsUpdating] = useState(false);
     const [localTransactions, setLocalTransactions] = useState(transactions);
@@ -31,7 +31,7 @@ function history({ onClose, transactions }) {
             );
         } catch (err) {
             console.error("Failed to update transaction:", err);
-            alert(err.message || "Failed to update transaction");
+            if (onError) onError(err.message || "Failed to update transaction");
         } finally {
             setIsUpdating(false);
         }

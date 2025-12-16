@@ -5,7 +5,7 @@ import { apiFetch } from "../../fetch.js"
 
 import "../../css/overworld.css";
 
-function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = false, modal = null}) {
+function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = false, modal = null, onError}) {
     const [houses, setHouses] = useState([]);
 
     const [residentAmount, setResidentAmount] = useState({});
@@ -83,7 +83,7 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = fals
             if (onRefresh) await onRefresh();
             return true;
         } catch (err) {
-            alert(err.message || "Cannot merge these houses");
+            if (onError) onError(err.message || "Cannot merge these houses");
             return false;
         }
     };
@@ -188,16 +188,12 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = fals
 
     // move coinlings across houses
     const moveCoinling = async (coinlingId, houseId) => {
-        try{
-            const token = localStorage.getItem("token");
-            await apiFetch(`/coinling/${coinlingId}/house`, {
-                method: "PATCH",
-                body: {houseId},
-                token
-            });
-        }catch (err){
-            alert(err.message || "Cannot move coinling!");
-        }
+        const token = localStorage.getItem("token");
+        await apiFetch(`/coinling/${coinlingId}/house`, {
+            method: "PATCH",
+            body: {houseId},
+            token
+        });
     }
 
     const handleCoinlingMouseDown = useCallback((e, coinling, house) => {
@@ -246,7 +242,7 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = fals
                 onRefresh();
             } catch (error) {
                 console.error("Failed to move coinling ->", error);
-                alert("Failed to move coinling. House might be full.");
+                if (onError) onError("Failed to move coinling. House might be full.");
             }
         }
 
