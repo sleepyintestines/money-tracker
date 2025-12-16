@@ -7,19 +7,38 @@ export default function useCoinlings(count, playableAreaPercent = 100, playableA
     // calculate constraints for movement within accessible area
     const minPos = playableAreaOffset;
     const maxPos = playableAreaOffset + playableAreaPercent;
-    const constrainedFieldWidth = playableAreaPercent;
-    const constrainedFieldHeight = playableAreaPercent;
+    
+    // minimum distance for target positions (scales with playable area, but has a floor)
+    const minTravelDistance = Math.max(15, playableAreaPercent * 0.2);
+
+    // helper function to generate a target position with minimum distance requirement
+    const generateTarget = (currentLeft, currentTop) => {
+        let attempts = 0;
+        let targetTop, targetLeft, distance;
+        
+        do {
+            targetTop = minPos + Math.random() * (playableAreaPercent - coinlingSize);
+            targetLeft = minPos + Math.random() * (playableAreaPercent - coinlingSize);
+            
+            const dx = targetLeft - currentLeft;
+            const dy = targetTop - currentTop;
+            distance = Math.sqrt(dx * dx + dy * dy);
+            
+            attempts++;
+        } while (distance < minTravelDistance && attempts < 20);
+        
+        return { targetTop, targetLeft };
+    };
 
     // initializes position data for each coinling, runs everytime count changes
     useEffect(() => {
         const newPositions = [];
         for(let i = 0; i < count; i++){
             // determines where coinling will start (random within accessible area)
-            const startTop = minPos + Math.random() * (constrainedFieldHeight - coinlingSize);
-            const startleft = minPos + Math.random() * (constrainedFieldWidth - coinlingSize);
-            // determines where coinling should move (random within accessible area)
-            const targetTop = minPos + Math.random() * (constrainedFieldHeight - coinlingSize);
-            const targetLeft = minPos + Math.random() * (constrainedFieldWidth - coinlingSize);
+            const startTop = minPos + Math.random() * (playableAreaPercent - coinlingSize);
+            const startleft = minPos + Math.random() * (playableAreaPercent - coinlingSize);
+            // determines where coinling should move (random within accessible area, with minimum distance)
+            const { targetTop, targetLeft } = generateTarget(startleft, startTop);
 
             newPositions.push({
                 top: startTop,
@@ -52,24 +71,31 @@ export default function useCoinlings(count, playableAreaPercent = 100, playableA
 
                         if(p.dragging || p.paused) return p;
 
-                        // waits before generating a new random target
-                        if(distance < 1 && !p.waiting){
+                        // reached target thn wait before generating a new random target
+                        if(distance < 0.5 && !p.waiting){
                             const waitTime = 5000 + Math.random() * 7000;
                             setTimeout(() => {
                                 setPositions((prev) =>
-                                    prev.map((ent, idx) =>
-                                        idx === i ? {
+                                    prev.map((ent, idx) => {
+                                        if (idx !== i) return ent;
+                                        const { targetTop, targetLeft } = generateTarget(ent.left, ent.top);
+                                        return {
                                             ...ent,
                                             waiting: false,
-                                            targetTop: minPos + Math.random() * (constrainedFieldHeight - coinlingSize),
-                                            targetLeft: minPos + Math.random() * (constrainedFieldWidth - coinlingSize),
+                                            targetTop,
+                                            targetLeft,
                                             duration: 3 + Math.random() * 2,
-                                        } : ent
-                                    )
+                                        };
+                                    })
                                 );
                             }, waitTime);
 
                             return  {...p, waiting: true};
+                        }
+
+                        // stop moving when very close to prevent sliding
+                        if(distance < 0.5) {
+                            return p;
                         }
 
                         // generates movement speed
@@ -95,7 +121,7 @@ export default function useCoinlings(count, playableAreaPercent = 100, playableA
 
         // cleanup
         return () => intervals.forEach(clearInterval);
-    }, [positions, minPos, maxPos, constrainedFieldHeight, constrainedFieldWidth, coinlingSize]);
+    }, [positions, minPos, maxPos, playableAreaPercent, coinlingSize]);
 
     return{positions, setPositions};
 }

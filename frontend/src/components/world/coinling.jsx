@@ -55,14 +55,8 @@ const coinling = forwardRef(function Coinling({ coinling, position, onMove, onDr
             const newLeftPercent = mouseX * 100;
             const newTopPercent = mouseY * 100;
 
-            // constrain to accessible area
-            const minPos = playableAreaOffset;
-            const maxPos = playableAreaOffset + playableAreaPercent;
-            
-            const constrainedLeft = Math.min(Math.max(newLeftPercent, minPos), maxPos);
-            const constrainedTop = Math.min(Math.max(newTopPercent, minPos), maxPos);
-
-            onMove(constrainedLeft, constrainedTop);
+            // allow free dragging without constraints
+            onMove(newLeftPercent, newTopPercent);
         };
 
         // drop coinling
@@ -71,9 +65,20 @@ const coinling = forwardRef(function Coinling({ coinling, position, onMove, onDr
                 const moved = !!hasMovedRef.current;
 
                 setDragging(false);
-                onDragEnd?.();
 
+                // snap back to playable area if dropped outside
                 if (moved) {
+                    const minPos = playableAreaOffset;
+                    const maxPos = playableAreaOffset + playableAreaPercent;
+                    
+                    const constrainedLeft = Math.min(Math.max(left, minPos), maxPos);
+                    const constrainedTop = Math.min(Math.max(top, minPos), maxPos);
+
+                    // if outside playable area, snap back
+                    if (left !== constrainedLeft || top !== constrainedTop) {
+                        onMove(constrainedLeft, constrainedTop);
+                    }
+
                     suppressClickRef.current = true;
                 }
 

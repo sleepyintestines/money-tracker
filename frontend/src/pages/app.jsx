@@ -10,6 +10,7 @@ import View from "../components/world/view.jsx"
 import Add from "../pages/functions/add.jsx"
 import Subtract from "../pages/functions/subtract.jsx"
 import History from "../pages/functions/history.jsx"
+import Journal from "../components/journal.jsx"
 
 import List from "../pages/other/list.jsx"
 
@@ -160,20 +161,20 @@ function Content() {
     }
   }
 
-  // create a new village
-  const createNewVillage = async () => {
+  // create a new house
+  const createNewHouse = async () => {
     if (!user) return;
     try {
       const token = localStorage.getItem("token");
-      await apiFetch("/villages/create", {
+      await apiFetch("/houses/create", {
         method: "POST",
         token
       });
 
       await refreshCoinlings();
     } catch (err) {
-      console.error("Failed to create village ->", err);
-      alert(err.message || "Failed to create village");
+      console.error("Failed to create house ->", err);
+      alert(err.message || "Failed to create house");
     }
   };
 
@@ -181,23 +182,23 @@ function Content() {
     setDeleteMode(prev => !prev);
   };
 
-  // delete an empty village
-  const deleteVillage = async (villageId) => {
+  // delete an empty house
+  const deleteHouse = async (houseId) => {
     if (!user) return;
     try {
-      await apiFetch(`/villages/${villageId}`, {
+      await apiFetch(`/houses/${houseId}`, {
         method: "DELETE",
         token: user.token
       });
 
       await refreshCoinlings();
     } catch (err) {
-      console.error("Failed to delete village ->", err);
-      alert(err.message || "Village must be empty!");
+      console.error("Failed to delete house ->", err);
+      alert(err.message || "House must be empty!");
     }
   };
 
-  // toggle to show coinlings residing in villages
+  // toggle to show coinlings residing in houses
   const toggleDisplay = () => {
     setShow(prev => !prev);
   };
@@ -237,9 +238,9 @@ function Content() {
         }
       />
 
-      {/* village page */}
+      {/* house page */}
       <Route
-        path="/village/:id"
+        path="/house/:id"
         element={
           !user ? (
             <Navigate to="/login" />
@@ -277,8 +278,9 @@ function Content() {
                 coinlings={coinlings} 
                 onRefresh={refreshCoinlings} 
                 deleteMode={deleteMode} 
-                onDeleteVillage={deleteVillage}
+                onDeleteHouse={deleteHouse}
                 show={show}
+                modal={modal}
               />
 
               {modal === "add" && (
@@ -295,6 +297,12 @@ function Content() {
                 <History
                   onClose={() => setModal(null)}
                   transactions={transactions}
+                />
+              )}
+              {modal === "journal" && (
+                <Journal
+                  onClose={() => setModal(null)}
+                  token={user.token}
                 />
               )}
               {modal === "dead" && (
@@ -344,7 +352,7 @@ function Content() {
                     <img src="/icons/taskbar-icons/eye-closed-icon.png" />
                   )}
                 </button>
-                <button onClick={createNewVillage} disabled={deleteMode}>
+                <button onClick={createNewHouse} disabled={deleteMode}>
                   <img src="/icons/taskbar-icons/create.png" />
                 </button>
                 <button onClick={toggleDeleteMode}>
@@ -353,6 +361,9 @@ function Content() {
                   ) : (
                       <img src="/icons/taskbar-icons/delete.png" />
                   )}
+                </button>
+                <button onClick={() => setModal("journal")}>
+                    <img src="/icons/taskbar-icons/logout-icon.png" />
                 </button>
                 <button onClick={logout}>
                   <img src="/icons/taskbar-icons/logout-icon.png" />

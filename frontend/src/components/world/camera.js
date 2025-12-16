@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 
 // manages camera movement
-export function Camera(){
+export function Camera(disabled = false){
     // store viewport dimensions in state so they can be updated on window resize
     const [dimensions, setDimensions] = useState({
         VIEW_WIDTH: window.innerWidth,
@@ -118,9 +118,10 @@ export function Camera(){
 
     // listen for mouse wheel events to handle zoom
     useEffect(() => {
+        if (disabled) return;
         window.addEventListener("wheel", handleWheel, {passive: false});
         return () => window.removeEventListener("wheel", handleWheel);
-    }, []);
+    }, [disabled]);
 
     return{
         camera, 

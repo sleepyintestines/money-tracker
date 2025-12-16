@@ -5,7 +5,8 @@ import connectDB from "./config/database.js"
 import authRoutes from "./routes/auth.js"
 import coinlingRoutes from "./routes/coinling.js"
 import transactionRoutes from "./routes/transactions.js"
-import villageRoutes from "./routes/village.js"
+import houseRoutes from "./routes/house.js"
+import journalRoutes from "./routes/journal.js"
 
 dotenv.config();
 connectDB();
@@ -19,7 +20,8 @@ app.use(cors());
 app.use("/api/auth", authRoutes);
 app.use("/api/coinling", coinlingRoutes);
 app.use("/api/transactions", transactionRoutes);
-app.use("/api/villages", villageRoutes);
+app.use("/api/houses", houseRoutes);
+app.use("/api/journal", journalRoutes);
 
 // start serverS
 const PORT = process.env.PORT || 5000;

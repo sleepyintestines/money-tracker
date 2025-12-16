@@ -3,7 +3,7 @@ import { getSprite } from "../utils/generateSprite.js"
 
 const  coinlingSchema = new mongoose.Schema({
     user: {type: mongoose.Schema.Types.ObjectId, ref: "User", required: true},
-    village: { type: mongoose.Schema.Types.ObjectId, ref: "Village", required: true },
+    house: { type: mongoose.Schema.Types.ObjectId, ref: "House", required: true },
     rarity: {type: String, enum: ["common", "rare", "legendary"]},
     sprite: {type: String},
     name: { type: String, required: true, default: "NPC" },

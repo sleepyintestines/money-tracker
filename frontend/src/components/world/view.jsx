@@ -8,7 +8,7 @@ import { apiFetch } from "../../fetch.js"
 
 function view({hideHeader}) {
     const { id } = useParams();
-    const [village, setVillage] = useState(null);
+    const [house, setHouse] = useState(null);
     const [selected, setSelected] = useState(null); 
     const [coinlings, setCoinlings] = useState([]);
     const [isEditing, setIsEditing] = useState(false);
@@ -24,7 +24,7 @@ function view({hideHeader}) {
         handleCameraUp } 
     = Camera();
 
-    // calculate accessible area based on current village capacity
+    // calculate accessible area based on current house capacity
     const getPlayableAreaPercent = (capacity) => {
         const capacityToPercent = {
             2: 12.5,
@@ -38,7 +38,7 @@ function view({hideHeader}) {
         return capacityToPercent[capacity] || 12.5;
     };
 
-    const playableAreaPercent = village ? getPlayableAreaPercent(village.capacity) : 100;
+    const playableAreaPercent = house ? getPlayableAreaPercent(house.capacity) : 100;
     const centerOffset = (100 - playableAreaPercent) / 2;
 
     // helper to close selected dialogue and unpause/resume the coinling
@@ -87,29 +87,29 @@ function view({hideHeader}) {
     }, [camera.scale]);
 
     useEffect(() => {
-        async function fetchVillage() {
+        async function fetchHouse() {
             try {
                 const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
                 const token = userInfo.token;
-                const payload = await apiFetch(`/villages/${id}`, {token});
+                const payload = await apiFetch(`/houses/${id}`, {token});
 
-                setVillage(payload.village);
+                setHouse(payload.house);
                 setCoinlings(payload.coinlings || []);
-                setNewName(payload.village.name || "Village");
+                setNewName(payload.house.name || "House");
             } catch (err) {
-                console.error("Failed to load village:", err);
+                console.error("Failed to load house:", err);
             }
         }
-        fetchVillage();
+        fetchHouse();
     }, [id]);
 
     const count = coinlings.length;
     const {positions, setPositions} = useCoinlings(count, playableAreaPercent, centerOffset);
 
-    // edit village name
-    const updateVillageName = async (villageId, name) => {
+    // edit house name
+    const updateHouseName = async (houseId, name) => {
         const token = localStorage.getItem("token");
-        return await apiFetch(`/villages/${villageId}/name`, {
+        return await apiFetch(`/houses/${houseId}/name`, {
             method: "PATCH",
             body: { name },
             token
@@ -117,18 +117,18 @@ function view({hideHeader}) {
     };
 
     const handleSave = async () => {
-        if (!newName.trim() || newName === village.name) {
+        if (!newName.trim() || newName === house.name) {
             setIsEditing(false);
             return;
         }
 
         setIsSaving(true);
         try {
-            const updatedVillage = await updateVillageName(village._id, newName);
-            setVillage(updatedVillage);
+            const updatedHouse = await updateHouseName(house._id, newName);
+            setHouse(updatedHouse);
             setIsEditing(false);
         } catch (err) {
-            console.error("Failed to update village name:", err);
+            console.error("Failed to update house name:", err);
         } finally {
             setIsSaving(false);
         }
@@ -137,14 +137,14 @@ function view({hideHeader}) {
     const handleKeyDown = (e) => {
         if (e.key === "Enter") handleSave();
         if (e.key === "Escape") {
-            setNewName(village.name);
+            setNewName(house.name);
             setIsEditing(false);
         }
     };
 
     return (
         <>
-            {village && !hideHeader && (
+            {house && !hideHeader && (
                 <div
                     style={{
                         position: "fixed",
@@ -193,11 +193,11 @@ function view({hideHeader}) {
                             }}
                             onClick={() => setIsEditing(true)}
                         >
-                            {village.name || "Village"}
+                            {house.name || "House"}
                         </div>
                     )}
                     <div style={{ fontSize: "1rem", color: "#ccc", textAlign: "center" }}>
-                        {count}/{village.capacity}
+                        {count}/{house.capacity}
                     </div>
                 </div>
             )}
@@ -283,22 +283,15 @@ function view({hideHeader}) {
 
                             setSelected({index: i, rect: null});
                         }}
-                        onMove={(newLeftPercent, newTopPercent) => {
-                            // constrain movement to accessible area
-                            const minPos = centerOffset;
-                            const maxPos = centerOffset + playableAreaPercent;
-                            
-                            const constrainedLeft = Math.min(Math.max(newLeftPercent, minPos), maxPos);
-                            const constrainedTop = Math.min(Math.max(newTopPercent, minPos), maxPos);
-                            
+                        onMove={(newLeftPercent, newTopPercent) => {                            
                             setPositions((prev) =>
                                 prev.map((pos, idx) =>
                                     idx === i
                                         ? {
                                             ...pos,
                                             dragging: true,
-                                            left: constrainedLeft,
-                                            top: constrainedTop,
+                                            left: newLeftPercent,
+                                            top: newTopPercent,
                                         }
                                         : pos
                                 )

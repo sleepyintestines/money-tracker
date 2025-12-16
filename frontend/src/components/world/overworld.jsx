@@ -5,13 +5,12 @@ import { apiFetch } from "../../fetch.js"
 
 import "../../css/overworld.css";
 
-function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = false}) {
-    const [villages, setVillages] = useState([]);
+function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = false, modal = null}) {
+    const [houses, setHouses] = useState([]);
 
-    // for merging villages
     const [residentAmount, setResidentAmount] = useState({});
-    const [draggingVillage, setDraggingVillage] = useState(null);
-    const [hoveredVillage, setHoveredVillage] = useState(null);
+    const [draggingHouse, setDraggingHouse] = useState(null);
+    const [hoveredHouse, setHoveredHouse] = useState(null);
     const [draggingCoinling, setDraggingCoinling] = useState(null);
     const [coinlingDragOffset, setCoinlingDragOffset] = useState({x: 0, y: 0});
     const [showTooltip, setShowTooltip] = useState(null);
@@ -22,44 +21,44 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = fa
         handleCameraDown,
         handleCameraMove,
         handleCameraUp,
-    } = Camera();
+    } = Camera(!!modal);
 
     const dragOffsetRef = useRef({ x: 0, y: 0 });
     const suppressClickRef = useRef(false);
     const navigate = useNavigate();
     const fieldRef = useRef(null);
 
-    const fetchVillages = async () => {
+    const fetchHouses = async () => {
         try {
             const token = localStorage.getItem("token");
-            const data = await apiFetch("/villages", { token });
+            const data = await apiFetch("/houses", { token });
 
-            setVillages(data);
+            setHouses(data);
         } catch (err) {
-            console.error("Failed to load villages:", err);
+            console.error("Failed to load houses:", err);
         }
     };
 
-    // get amount of coinlings inside a village
+    // get amount of coinlings inside a house
     const fetchCount = async () => {
         const counts = {};
-        for(const v of villages){
-            counts[v._id] = coinlings.filter(g => g.village === v._id && !g.dead).length;
+        for(const v of houses){
+            counts[v._id] = coinlings.filter(g => g.house === v._id && !g.dead).length;
         }
 
         setResidentAmount(counts);
     }
 
-    const updateVillagePosition = async (id, leftPercent, topPercent) => {
+    const updateHousePosition = async (id, leftPercent, topPercent) => {
         try {
             const token = localStorage.getItem("token");
-            await apiFetch(`/villages/${id}/position`, {
+            await apiFetch(`/houses/${id}/position`, {
                 method: "PUT",
                 token,
                 body: { leftPercent, topPercent },
             });
         } catch (err) {
-            console.error("Failed to update village position:", err);
+            console.error("Failed to update house position:", err);
         }
     };
 
@@ -71,27 +70,27 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = fa
         return true;
     };
 
-    const mergeVillages = async (sourceId, targetId) => {
+    const mergeHouses = async (sourceId, targetId) => {
         try {
             const token = localStorage.getItem("token");
-            await apiFetch("/villages/merge", {
+            await apiFetch("/houses/merge", {
                 method: "POST",
                 token,
                 body: { sourceId, targetId },
             });
 
-            await fetchVillages();
+            await fetchHouses();
             if (onRefresh) await onRefresh();
             return true;
         } catch (err) {
-            alert(err.message || "Cannot merge these villages");
+            alert(err.message || "Cannot merge these houses");
             return false;
         }
     };
 
-    // detect if currently dragged village overlaps with another village
-    const checkVillageOverlap = (draggingId, leftPercent, topPercent) => {
-        for (const v of villages) {
+    // detect if currently dragged house overlaps with another house
+    const checkHouseOverlap = (draggingId, leftPercent, topPercent) => {
+        for (const v of houses) {
             if (v._id === draggingId) continue;
 
             const dx = Math.abs(v.leftPercent - leftPercent);
@@ -104,7 +103,7 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = fa
         return null;
     };
 
-    const handleVillageMouseDown = (e, village) => {
+    const handleHouseMouseDown = (e, house) => {
         e.stopPropagation();
         e.preventDefault();
 
@@ -114,26 +113,26 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = fa
             y: e.clientY - (rect.top + rect.height / 2),
         };
 
-        setDraggingVillage(village._id);
+        setDraggingHouse(house._id);
         suppressClickRef.current = false;
     };
 
     useEffect(() => {
-        fetchVillages();
+        fetchHouses();
     }, []);
 
-    // refetch villages when coinlings change
+    // refetch houses when coinlings change
     useEffect(() => {
-        fetchVillages();
+        fetchHouses();
     }, [coinlings]);
 
     useEffect(() => {
         fetchCount();
-    }, [villages, coinlings]);
+    }, [houses, coinlings]);
 
-    // drag logic (villages)
+    // drag logic (houses)
     useEffect(() => {
-        if (!draggingVillage) return;
+        if (!draggingHouse) return;
 
         const handleMouseMove = (e) => {
             const field = document.querySelector(".field > div");
@@ -151,12 +150,12 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = fa
                 100
             );
 
-            const overlappingVillage = checkVillageOverlap(draggingVillage, leftPercent, topPercent);
-            setHoveredVillage(overlappingVillage ? overlappingVillage._id : null);
+            const overlappingHouse = checkHouseOverlap(draggingHouse, leftPercent, topPercent);
+            setHoveredHouse(overlappingHouse ? overlappingHouse._id : null);
 
-            setVillages((prev) =>
+            setHouses((prev) =>
                 prev.map((v) =>
-                    v._id === draggingVillage ? { ...v, leftPercent, topPercent } : v
+                    v._id === draggingHouse ? { ...v, leftPercent, topPercent } : v
                 )
             );
 
@@ -164,18 +163,18 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = fa
         };
 
         const handleMouseUp = async () => {
-            const source = villages.find(v => v._id === draggingVillage);
-            const target = villages.find(v => v._id === hoveredVillage);
+            const source = houses.find(v => v._id === draggingHouse);
+            const target = houses.find(v => v._id === hoveredHouse);
 
             if (source && target && canMergeUI(source, target)) {
-                await mergeVillages(source._id, target._id);
+                await mergeHouses(source._id, target._id);
             } else if (source) {
-                // if didn't merge update village position
-                await updateVillagePosition(source._id, source.leftPercent, source.topPercent);
+                // if didn't merge update house position
+                await updateHousePosition(source._id, source.leftPercent, source.topPercent);
             }
 
-            setDraggingVillage(null);
-            setHoveredVillage(null);
+            setDraggingHouse(null);
+            setHoveredHouse(null);
         };
 
         document.addEventListener("mousemove", handleMouseMove);
@@ -185,15 +184,15 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = fa
             document.removeEventListener("mousemove", handleMouseMove);
             document.removeEventListener("mouseup", handleMouseUp);
         };
-    }, [draggingVillage, villages]);
+    }, [draggingHouse, houses]);
 
-    // move coinlings across villages
-    const moveCoinling = async (coinlingId, villageId) => {
+    // move coinlings across houses
+    const moveCoinling = async (coinlingId, houseId) => {
         try{
             const token = localStorage.getItem("token");
-            await apiFetch(`/coinling/${coinlingId}/village`, {
+            await apiFetch(`/coinling/${coinlingId}/house`, {
                 method: "PATCH",
-                body: {villageId},
+                body: {houseId},
                 token
             });
         }catch (err){
@@ -201,7 +200,7 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = fa
         }
     }
 
-    const handleCoinlingMouseDown = useCallback((e, coinling, village) => {
+    const handleCoinlingMouseDown = useCallback((e, coinling, house) => {
         if (deleteMode) return; // don't drag in delete mode
 
         e.stopPropagation();
@@ -210,7 +209,7 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = fa
             x: e.clientX - rect.left,
             y: e.clientY - rect.top
         });
-        setDraggingCoinling({...coinling, sourceVillage: village});
+        setDraggingCoinling({...coinling, sourceHouse: house});
     }, [deleteMode]);
 
     const handleCoinlingMove = useCallback((e) => {
@@ -231,8 +230,8 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = fa
     const handleCoinlingMouseUp = useCallback(async (e) => {
         if (!draggingCoinling) return;
 
-        // find which village the coinling was dropped on
-        const targetVillage = villages.find(v => {
+        // find which house the coinling was dropped on
+        const targetHouse = houses.find(v => {
             const distance = Math.sqrt(
                 Math.pow(v.leftPercent - draggingCoinling.leftPercent, 2) +
                 Math.pow(v.topPercent - draggingCoinling.topPercent, 2)
@@ -240,19 +239,19 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = fa
             return distance < 5;
         });
 
-        // if dropped on a different village, move it
-        if (targetVillage && targetVillage._id !== draggingCoinling.sourceVillage._id) {
+        // if dropped on a different house, move it
+        if (targetHouse && targetHouse._id !== draggingCoinling.sourceHouse._id) {
             try {
-                await moveCoinling(draggingCoinling._id, targetVillage._id);
+                await moveCoinling(draggingCoinling._id, targetHouse._id);
                 onRefresh();
             } catch (error) {
                 console.error("Failed to move coinling ->", error);
-                alert("Failed to move coinling. Village might be full.");
+                alert("Failed to move coinling. House might be full.");
             }
         }
 
         setDraggingCoinling(null);
-    }, [draggingCoinling, villages, onRefresh]);
+    }, [draggingCoinling, houses, onRefresh]);
 
     // coinling drag logic
     useEffect(() => {
@@ -296,11 +295,11 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = fa
                     position: "relative",
                 }}
             >
-                {villages.map((v) => {
-                    const isDragging = draggingVillage === v._id;
-                    const isHovered = hoveredVillage === v._id;
+                {houses.map((v) => {
+                    const isDragging = draggingHouse === v._id;
+                    const isHovered = hoveredHouse === v._id;
                     const count = residentAmount[v._id] || 0;
-                    const source = villages.find(vl => vl._id === draggingVillage);
+                    const source = houses.find(vl => vl._id === draggingHouse);
                     const canMerge = isHovered && source && canMergeUI(source, v);
                     return (
                         <div
@@ -313,11 +312,11 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = fa
                             }}
                         >
                             <img 
-                                src="/sprites/village-sprites/temp.png"
-                                alt={v.name || "Village"}
+                                src="/sprites/house-sprites/temp.png"
+                                alt={v.name || "House"}
                                 onMouseDown={(e) => {
                                     if (deleteMode) return;
-                                    handleVillageMouseDown(e, v);
+                                    handleHouseMouseDown(e, v);
                                 }}
                                 onMouseEnter={() => setShowTooltip(v._id)}
                                 onMouseLeave={() => setShowTooltip(null)}
@@ -331,11 +330,11 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = fa
 
                                     if (deleteMode) {
                                         e.stopPropagation();
-                                        onDeleteVillage(v._id);
+                                        onDeleteHouse(v._id);
                                         return;
                                     }
 
-                                    navigate(`/village/${v._id}`);
+                                    navigate(`/house/${v._id}`);
                                 }}
                                 style={{
                                     width: "128px",
@@ -377,7 +376,7 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = fa
                                     }}
                                 >
                                     <div style={{ fontWeight: "bold", marginBottom: "2px" }}>
-                                        {v.name || "Village"}
+                                        {v.name || "House"}
                                     </div>
                                     <div style={{ fontSize: "2rem", color: "#ccc" }}>
                                         {count}/{v.capacity}
@@ -406,28 +405,28 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = fa
                         </div>
                     );
                 })}
-                {/* render coinlings from each village */}
-                {show && villages.map(village => {
-                    const villageCoinlings = coinlings.filter(g => g.village === village._id && !g.dead);
+                {/* render coinlings from each house */}
+                {show && houses.map(house => {
+                    const houseCoinlings = coinlings.filter(g => g.house === house._id && !g.dead);
 
-                    return villageCoinlings.map((coinling, index) => {
-                        // position coinlings around their village in a circle pattern
-                        const angle = (index / Math.max(villageCoinlings.length, 1)) * 2 * Math.PI;
+                    return houseCoinlings.map((coinling, index) => {
+                        // position coinlings around their house in a circle pattern
+                        const angle = (index / Math.max(houseCoinlings.length, 1)) * 2 * Math.PI;
 
                         // calculate radius dynamically 
                         const spacing = 2; // space between coinlings
-                        const minRadius = { 8: 4, 16: 5.5, 32: 7, 64: 9, 128: 12 }[village.capacity] || 4;
-                        const maxRadius = { 8: 5, 16: 7, 32: 9, 64: 12, 128: 15 }[village.capacity] || 10;
+                        const minRadius = { 8: 4, 16: 5.5, 32: 7, 64: 9, 128: 12 }[house.capacity] || 4;
+                        const maxRadius = { 8: 5, 16: 7, 32: 9, 64: 12, 128: 15 }[house.capacity] || 10;
 
                         // calculate required radius for even spacing: circumference = 2πr, spacing = circumference / count
-                        const requiredRadius = (villageCoinlings.length * spacing) / (2 * Math.PI);
+                        const requiredRadius = (houseCoinlings.length * spacing) / (2 * Math.PI);
                         const radius = Math.min(maxRadius, Math.max(minRadius, requiredRadius));
 
                         const offsetX = Math.cos(angle) * radius;
                         const offsetY = Math.sin(angle) * radius;
 
-                        const left = village.leftPercent + offsetX;
-                        const top = village.topPercent + offsetY;
+                        const left = house.leftPercent + offsetX;
+                        const top = house.topPercent + offsetY;
 
                         // if coinling is being dragged, use dragging position
                         const isBeingDragged = draggingCoinling?._id === coinling._id;
@@ -437,7 +436,7 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteVillage, show = fa
                         return (
                             <div
                                 key={coinling._id}
-                                onMouseDown={(e) => handleCoinlingMouseDown(e, coinling, village)}
+                                onMouseDown={(e) => handleCoinlingMouseDown(e, coinling, house)}
                                 style={{
                                     position: "absolute",
                                     left: `${displayLeft}%`,

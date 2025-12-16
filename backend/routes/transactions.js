@@ -2,7 +2,7 @@ import express from "express"
 import Transaction from "../schemas/Transaction.js"
 import User from "../schemas/User.js"
 import Coinling from "../schemas/Coinling.js"
-import Village from "../schemas/Village.js"
+import House from "../schemas/House.js"
 import mongoose from "mongoose"
 import {protect} from "../middleware/authm.js"
 import { randomPersonality, dialoguesFor } from "../utils/generateDialogue.js"
@@ -22,24 +22,24 @@ async function ensureCoinlingCount(userId, desiredCount){
     if(aliveCount < desiredCount){
         const need = desiredCount - aliveCount;
         
-        // fetch villages once and get current counts in single aggregation query
-        const villages = await Village.find({ user: userObjectId, deleted: false }).lean();
-        const villageCounts = await Coinling.aggregate([
+        // fetch houses once and get current counts in single aggregation query
+        const houses = await House.find({ user: userObjectId, deleted: false }).lean();
+        const houseCounts = await Coinling.aggregate([
             { $match: { user: userObjectId, dead: false } },
-            { $group: { _id: "$village", count: { $sum: 1 } } }
+            { $group: { _id: "$house", count: { $sum: 1 } } }
         ]);
         
-        const countMap = new Map(villageCounts.map(v => [v._id.toString(), v.count]));
+        const countMap = new Map(houseCounts.map(v => [v._id.toString(), v.count]));
         
         // prepare batch of coinlings to create
         const coinlingsToCreate = [];
-        let newVillages = [];
+        let newHouses = [];
         
         for(let i = 0; i < need; i++){
             let chosen = null;
             
-            // look for available villages - check ALL villages before creating new one
-            for (const v of villages) {
+            // look for available houses - check ALL houses before creating new one
+            for (const v of houses) {
                 const currentCount = countMap.get(v._id.toString()) || 0;
                 if (currentCount < v.capacity) {
                     chosen = v;
@@ -48,22 +48,22 @@ async function ensureCoinlingCount(userId, desiredCount){
                 }
             }
 
-            // only create new village if ALL existing villages are at max capacity
+            // only create new house if ALL existing houses are at max capacity
             if (!chosen) {
-                // check if we already have a pending new village with space
-                const pendingVillage = newVillages.find(nv => {
+                // check if we already have a pending new house with space
+                const pendingHouse = newHouses.find(nv => {
                     const tempId = nv.tempId;
                     const currentCount = countMap.get(tempId) || 0;
                     return currentCount < nv.capacity;
                 });
                 
-                if (pendingVillage) {
-                    chosen = pendingVillage;
-                    const tempId = pendingVillage.tempId;
+                if (pendingHouse) {
+                    chosen = pendingHouse;
+                    const tempId = pendingHouse.tempId;
                     const currentCount = countMap.get(tempId) || 0;
                     countMap.set(tempId, currentCount + 1);
                 } else {
-                    // create new village only when necessary
+                    // create new house only when necessary
                     const leftPercent = Math.floor(Math.random() * 80) + 10; 
                     const topPercent = Math.floor(Math.random() * 80) + 10;
                     const tempId = `temp_${Date.now()}_${i}`;
@@ -72,10 +72,10 @@ async function ensureCoinlingCount(userId, desiredCount){
                         leftPercent,
                         topPercent,
                         capacity: 2,
-                        name: "Village",
+                        name: "House",
                         tempId // temporary id for tracking before insertion
                     };
-                    newVillages.push(chosen);
+                    newHouses.push(chosen);
                     countMap.set(tempId, 1);
                 }
             }
@@ -92,7 +92,7 @@ async function ensureCoinlingCount(userId, desiredCount){
             
             coinlingsToCreate.push({
                 user: userObjectId,
-                village: chosen._id || chosen.tempId, // use real id or temp id
+                house: chosen._id || chosen.tempId, // use real id or temp id
                 name: randomName(),
                 personality,
                 dialogues: dialoguesFor(personality),
@@ -101,9 +101,9 @@ async function ensureCoinlingCount(userId, desiredCount){
             });
         }
         
-        // bulk create new villages if needed
-        if (newVillages.length > 0) {
-            const created = await Village.insertMany(newVillages.map(nv => ({
+        // bulk create new houses if needed
+        if (newHouses.length > 0) {
+            const created = await House.insertMany(newHouses.map(nv => ({
                 user: nv.user,
                 leftPercent: nv.leftPercent,
                 topPercent: nv.topPercent,
@@ -113,15 +113,15 @@ async function ensureCoinlingCount(userId, desiredCount){
             
             // create mapping from temp ids to real ids
             const tempIdToRealId = new Map();
-            created.forEach((village, idx) => {
-                tempIdToRealId.set(newVillages[idx].tempId, village._id);
+            created.forEach((house, idx) => {
+                tempIdToRealId.set(newHouses[idx].tempId, house._id);
             });
             
-            // update village ids in coinlings
+            // update house ids in coinlings
             for (let i = 0; i < coinlingsToCreate.length; i++) {
-                const villageId = coinlingsToCreate[i].village;
-                if (typeof villageId === 'string' && villageId.startsWith('temp_')) {
-                    coinlingsToCreate[i].village = tempIdToRealId.get(villageId);
+                const houseId = coinlingsToCreate[i].house;
+                if (typeof houseId === 'string' && houseId.startsWith('temp_')) {
+                    coinlingsToCreate[i].house = tempIdToRealId.get(houseId);
                 }
             }
         }

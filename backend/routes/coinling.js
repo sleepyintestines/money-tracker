@@ -1,7 +1,7 @@
 import express from "express"
 import Coinling from "../schemas/Coinling.js"
 import { protect } from "../middleware/authm.js"
-import Village from "../schemas/Village.js";
+import House from "../schemas/House.js";
 
 const router = express.Router();
 
@@ -60,10 +60,10 @@ router.patch("/:id/name", protect, async (req, res) => {
 
 });
 
-// move coinlings across villages
-router.patch("/:id/village", protect, async (req, res) => {
+// move coinlings across houses
+router.patch("/:id/house", protect, async (req, res) => {
     try{
-        const {villageId} = req.body;
+        const {houseId} = req.body;
         const coinling = await Coinling.findOne({
             _id: req.params.id,
             user: req.user,
@@ -74,9 +74,9 @@ router.patch("/:id/village", protect, async (req, res) => {
             return res.status(404).json({error: "Coinling not found!"});
         }
 
-        // validate target village
-        const destination = await Village.findOne({
-            _id: villageId,
+        // validate target house
+        const destination = await House.findOne({
+            _id: houseId,
             user: req.user,
             deleted: false
         });
@@ -85,17 +85,17 @@ router.patch("/:id/village", protect, async (req, res) => {
             return res.status(404).json({error: "Destination not found!"});
         }
 
-        // check target village capacity
+        // check target house capacity
         const count = await Coinling.countDocuments({
-            village: villageId,
+            house: houseId,
             dead: false
         });
 
         if(count >= destination.capacity){
-            return res.status(400).json({error: "Village is full!"});
+            return res.status(400).json({error: "House is full!"});
         }
 
-        coinling.village = villageId;
+        coinling.house = houseId;
         await coinling.save();
         res.json({coinling});
     }catch (err){
