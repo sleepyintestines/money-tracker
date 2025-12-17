@@ -28,6 +28,20 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = fals
     const navigate = useNavigate();
     const fieldRef = useRef(null);
 
+    // get house sprite based on capacity
+    const getHouseSprite = (capacity) => {
+        const spriteMap = {
+            2: "/sprites/house-sprites/house.png",
+            4: "/sprites/house-sprites/house-4.png",
+            8: "/sprites/house-sprites/house-8.png",
+            16: "/sprites/house-sprites/house-16.png",
+            32: "/sprites/house-sprites/house-32.png",
+            64: "/sprites/house-sprites/house-64.png",
+            128: "/sprites/house-sprites/house-128.png"
+        };
+        return spriteMap[capacity];
+    };
+
     const fetchHouses = async () => {
         try {
             const token = localStorage.getItem("token");
@@ -308,7 +322,7 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = fals
                             }}
                         >
                             <img 
-                                src="/sprites/house-sprites/temp.png"
+                                src={getHouseSprite(v.capacity)}
                                 alt={v.name || "House"}
                                 onMouseDown={(e) => {
                                     if (deleteMode) return;
@@ -333,9 +347,8 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = fals
                                     navigate(`/house/${v._id}`);
                                 }}
                                 style={{
-                                    width: "128px",
-                                    height: "128px",
-                                    imageRendering: "pixelated",
+                                    width: "auto",
+                                    height: "auto",
                                     cursor: deleteMode
                                         ? (count === 0 ? "pointer" : "not-allowed")
                                         : (isDragging ? "grabbing" : "grab"),
@@ -437,8 +450,8 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = fals
                                     position: "absolute",
                                     left: `${displayLeft}%`,
                                     top: `${displayTop}%`,
-                                    width: "48px",
-                                    height: "48px",
+                                    width: "64px",
+                                    height: "64px",
                                     cursor: deleteMode ? "default" : (isBeingDragged ? "grabbing" : "grab"),
                                     zIndex: isBeingDragged ? 1000 : -10,
                                     pointerEvents: deleteMode ? "none" : "auto",
@@ -453,7 +466,6 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = fals
                                     style={{
                                         width: "100%",
                                         height: "100%",
-                                        imageRendering: "pixelated",
                                         opacity: isBeingDragged ? 0.7 : 1,
                                         filter: isBeingDragged ? "drop-shadow(0 0 8px rgba(59, 130, 246, 0.8))" : "none",
                                     }}

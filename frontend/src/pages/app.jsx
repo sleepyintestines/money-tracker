@@ -37,6 +37,7 @@ function Content() {
   const [hideHeader, setHideHeader] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
   const [show, setShow] = useState(true);
+  const [journal, setJournal] = useState(false);
   const [list, setList] = useState([]);
 
   const navigate = useNavigate();
@@ -185,6 +186,10 @@ function Content() {
     setDeleteMode(prev => !prev);
   };
 
+  const toggleJournal = () => {
+    setJournal(!journal);
+  };
+
   // delete an empty house
   const deleteHouse = async (houseId) => {
     if (!user) return;
@@ -312,7 +317,7 @@ function Content() {
               )}
               {modal === "journal" && (
                 <Journal
-                  onClose={() => setModal(null)}
+                  onClose={() => {setModal(null); setJournal()}}
                   token={user.token}
                 />
               )}
@@ -365,9 +370,9 @@ function Content() {
                 </button>
                 <button onClick={toggleDisplay}>
                   {show ? (
-                    <img src="/icons/taskbar-icons/eye-icon.png" />
+                    <img src="/icons/taskbar-icons/move-on.png" />
                   ) : (
-                    <img src="/icons/taskbar-icons/eye-closed-icon.png" />
+                    <img src="/icons/taskbar-icons/move.png" />
                   )}
                 </button>
                 <button onClick={createNewHouse} disabled={deleteMode}>
@@ -380,11 +385,15 @@ function Content() {
                       <img src="/icons/taskbar-icons/delete.png" />
                   )}
                 </button>
-                <button onClick={() => setModal("journal")}>
-                    <img src="/icons/taskbar-icons/logout-icon.png" />
+                <button onClick={() => {setModal("journal"); toggleJournal();}}>
+                   {journal ? (
+                      <img src="/icons/taskbar-icons/book-on.png" />
+                   ) : (
+                      <img src="/icons/taskbar-icons/book.png" />
+                   )}
                 </button>
                 <button onClick={() => setModal("analytics")}>
-                    <img src="/icons/taskbar-icons/logout-icon.png" />
+                    <img src="/icons/taskbar-icons/analytics.png" />
                 </button>
                 <button onClick={logout}>
                   <img src="/icons/taskbar-icons/logout-icon.png" />
