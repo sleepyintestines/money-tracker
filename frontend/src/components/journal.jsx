@@ -118,67 +118,100 @@ export default function journal({ onClose, token }) {
     };
 
     return (
-        <Modal onClose={onClose} style={{width: "128px"}}>
-            <div 
-                className="journal-box" 
-                style={{
-                    maxHeight: "526px", 
-                    overflowY: "auto", 
-                    padding: "2px"                     
-                }}
-            >
-                <h2 style={{ marginBottom: "24px", textAlign: "center" }}>Sprite Journal</h2>
+        <Modal onClose={onClose}>
+            <div>
+                <h2 style={{ textAlign: "center", marginBottom: "30px", color: "#333" }}>
+                    Sprite Journal
+                </h2>
                 
                 {loading ? (
                     <p style={{ textAlign: "center", color: "#999" }}>Loading...</p>
                 ) : (
                     <>
-                        <div style={{ marginBottom: "32px" }}>
-                            <h3 style={{
+                        {/* Total Progress */}
+                        <div style={{
+                            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                            padding: "20px",
+                            borderRadius: "12px",
+                            color: "white",
+                            marginBottom: "20px"
+                        }}>
+                            <h3 style={{ margin: "0 0 10px 0" }}>Collection Progress</h3>
+                            <p style={{ fontSize: "2rem", margin: 0, fontWeight: "bold" }}>
+                                {unlockedSprites.length} / {allSprites.common.length + allSprites.rare.length + allSprites.legendary.length}
+                            </p>
+                            <p style={{ fontSize: "0.9rem", opacity: 0.9, margin: "5px 0 0 0" }}>
+                                Sprites unlocked
+                            </p>
+                        </div>
+
+                        {/* Common Sprites */}
+                        <div style={{
+                            background: "#f8f9fa",
+                            padding: "20px",
+                            borderRadius: "12px",
+                            marginBottom: "20px"
+                        }}>
+                            <h3 style={{ 
+                                marginTop: 0, 
+                                marginBottom: "15px", 
                                 color: "#8B4513",
-                                marginBottom: "12px",
-                                borderBottom: "2px solid #8B4513",
-                                paddingBottom: "4px"
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center"
                             }}>
-                                Common ({unlockedSprites.filter(s => s.includes('/common/')).length}/{allSprites.common.length})
+                                <span>Common</span>
+                                <span style={{ fontSize: "0.9rem", fontWeight: "normal", color: "#666" }}>
+                                    {unlockedSprites.filter(s => s.includes('/common/')).length}/{allSprites.common.length}
+                                </span>
                             </h3>
                             {renderSpriteGrid(allSprites.common, "common")}
                         </div>
 
-                        <div style={{ marginBottom: "32px" }}>
-                            <h3 style={{
+                        {/* Rare Sprites */}
+                        <div style={{
+                            background: "#f8f9fa",
+                            padding: "20px",
+                            borderRadius: "12px",
+                            marginBottom: "20px"
+                        }}>
+                            <h3 style={{ 
+                                marginTop: 0, 
+                                marginBottom: "15px", 
                                 color: "#4169E1",
-                                marginBottom: "12px",
-                                borderBottom: "2px solid #4169E1",
-                                paddingBottom: "4px"
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center"
                             }}>
-                                Rare ({unlockedSprites.filter(s => s.includes('/rare/')).length}/{allSprites.rare.length})
+                                <span>Rare</span>
+                                <span style={{ fontSize: "0.9rem", fontWeight: "normal", color: "#666" }}>
+                                    {unlockedSprites.filter(s => s.includes('/rare/')).length}/{allSprites.rare.length}
+                                </span>
                             </h3>
                             {renderSpriteGrid(allSprites.rare, "rare")}
                         </div>
 
-                        <div style={{ marginBottom: "32px" }}>
-                            <h3 style={{
+                        {/* Legendary Sprites */}
+                        <div style={{
+                            background: "#f8f9fa",
+                            padding: "20px",
+                            borderRadius: "12px",
+                            marginBottom: "20px"
+                        }}>
+                            <h3 style={{ 
+                                marginTop: 0, 
+                                marginBottom: "15px", 
                                 color: "#FFD700",
-                                marginBottom: "12px",
-                                borderBottom: "2px solid #FFD700",
-                                paddingBottom: "4px"
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center"
                             }}>
-                                Legendary ({unlockedSprites.filter(s => s.includes('/legendary/')).length}/{allSprites.legendary.length})
+                                <span>Legendary</span>
+                                <span style={{ fontSize: "0.9rem", fontWeight: "normal", color: "#666" }}>
+                                    {unlockedSprites.filter(s => s.includes('/legendary/')).length}/{allSprites.legendary.length}
+                                </span>
                             </h3>
                             {renderSpriteGrid(allSprites.legendary, "legendary")}
-                        </div>
-
-                        <div style={{
-                            marginTop: "24px",
-                            padding: "12px",
-                            background: "#f5f5f5",
-                            borderRadius: "8px",
-                            textAlign: "center"
-                        }}>
-                            <p style={{ fontSize: "14px", color: "#666", margin: 0 }}>
-                                Total Unlocked: {unlockedSprites.length} / {allSprites.common.length + allSprites.rare.length + allSprites.legendary.length}
-                            </p>
                         </div>
                     </>
                 )}

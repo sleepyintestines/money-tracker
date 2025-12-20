@@ -17,6 +17,7 @@
     border-radius: 8px;
     min-width: 260px;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+    font-family: 'Roboto', sans-serif;
 }
 
 .coinling-dialogue-header {
@@ -42,6 +43,7 @@
     font-size: 12px;
     line-height: 1.2;
     position: relative;
+    font-family: 'Roboto', sans-serif;
 }
 
 .coinling-speech-bubble.above::after {

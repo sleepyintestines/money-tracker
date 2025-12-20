@@ -38,41 +38,43 @@ function history({ onClose, transactions, onError }) {
     };
 
     return (
-        <Modal onClose={onClose}>
-            <h2>Transaction History</h2>
+        <Modal onClose={onClose} showCloseButton={!selectedTx}>
+            {!selectedTx ? (
+                <>
+                    <h2>Transaction History</h2>
 
-            <div 
-                className="history-list"
-                onWheel={(e) => e.stopPropagation()}
-            >
-                {sortedTransactions.length === 0 && <p>No transactions yet...</p>}
+                    <div 
+                        className="history-list"
+                        onWheel={(e) => e.stopPropagation()}
+                    >
+                        {sortedTransactions.length === 0 && <p>No transactions yet...</p>}
 
-                {sortedTransactions.map((t, index) => {
-                    if (!t || typeof t !== "object") return null;
+                        {sortedTransactions.map((t, index) => {
+                            if (!t || typeof t !== "object") return null;
 
-                    return (
-                        <div
-                            key={t._id || t.id || index}
-                            className="transaction-box"
-                            onClick={() => setSelectedTx(t)}
-                        >
-                            <div className="transaction-summary">
-                                <span className="amount-sign">
-                                    <strong className={t.type === "add" ? "add-sign" : "subtract-sign"}>
-                                        {t.type === "add" ? "+" : "-"}
-                                    </strong>
-                                    <strong> ₱{t.amount}</strong>
-                                </span>
-                                <span className="transaction-date">{t.date}</span>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-
-            {selectedTx && (
-                <Modal onClose={() => setSelectedTx(null)}>
-                    <h3>Transaction Details</h3>
+                            return (
+                                <div
+                                    key={t._id || t.id || index}
+                                    className="transaction-box"
+                                    onClick={() => setSelectedTx(t)}
+                                >
+                                    <div className="transaction-summary">
+                                        <span className="amount-sign">
+                                            <strong className={t.type === "add" ? "add-sign" : "subtract-sign"}>
+                                                {t.type === "add" ? "+" : "-"}
+                                            </strong>
+                                            <strong> ₱{t.amount}</strong>
+                                        </span>
+                                        <span className="transaction-date">{t.date}</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </>
+            ) : (
+                <>
+                    <h3 style={{fontSize: "24px"}}>Transaction Details</h3>
                     <div className="transaction-detail">
                         <p>
                             <strong>Type:</strong> {selectedTx.type === "add" ? "Added" : "Spent"}
@@ -102,7 +104,7 @@ function history({ onClose, transactions, onError }) {
                                         disabled={isUpdating || selectedTx.worthIt === true}
                                         style={{
                                             padding: "4px 16px",
-                                            backgroundColor: selectedTx.worthIt === true ? "#22c55e" : "#374151",
+                                            backgroundColor: selectedTx.worthIt === true ? "#4f3fcc" : "#374151",
                                             color: "white",
                                             border: "none",
                                             borderRadius: "4px",
@@ -121,7 +123,7 @@ function history({ onClose, transactions, onError }) {
                                         disabled={isUpdating || selectedTx.worthIt === false}
                                         style={{
                                             padding: "4px 16px",
-                                            backgroundColor: selectedTx.worthIt === false ? "#ef4444" : "#374151",
+                                            backgroundColor: selectedTx.worthIt === false ? "#4f3fcc" : "#374151",
                                             color: "white",
                                             border: "none",
                                             borderRadius: "4px",
@@ -138,8 +140,27 @@ function history({ onClose, transactions, onError }) {
                                 </div>
                             </p>
                         )}
+                        <button
+                            onClick={() => setSelectedTx(null)}
+                            style={{
+                                background: "none",
+                                border: "none",
+                                color: "#4f3fcc",
+                                fontSize: "16px",
+                                cursor: "pointer",
+                                padding: "0",
+                                marginTop: "25px",
+                                marginLeft: "-20px",
+                                display: "flex",
+                                alignItems: "right",
+                                fontWeight: "bold",
+                                gap: "4px"
+                            }}
+                        >
+                            ← Back to History
+                        </button>
                     </div>
-                </Modal>
+                </>
             )}
         </Modal>
     );

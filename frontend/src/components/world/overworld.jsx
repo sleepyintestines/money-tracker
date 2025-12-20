@@ -87,14 +87,21 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = fals
     const mergeHouses = async (sourceId, targetId) => {
         try {
             const token = localStorage.getItem("token");
-            await apiFetch("/houses/merge", {
+            
+            // Perform merge and immediately update UI optimistically
+            const mergePromise = apiFetch("/houses/merge", {
                 method: "POST",
                 token,
                 body: { sourceId, targetId },
             });
 
-            await fetchHouses();
-            if (onRefresh) await onRefresh();
+            // execute fetches in parallel for faster response
+            await mergePromise;
+            await Promise.all([
+                fetchHouses(),
+                onRefresh ? onRefresh() : Promise.resolve()
+            ]);
+            
             return true;
         } catch (err) {
             if (onError) onError(err.message || "Cannot merge these houses");
@@ -453,8 +460,8 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = fals
                                     position: "absolute",
                                     left: `${displayLeft}%`,
                                     top: `${displayTop}%`,
-                                    width: "64px",
-                                    height: "64px",
+                                    width: "80px",
+                                    height: "80px",
                                     cursor: deleteMode ? "default" : (isBeingDragged ? "grabbing" : "grab"),
                                     zIndex: isBeingDragged ? 1000 : -10,
                                     pointerEvents: deleteMode ? "none" : "auto",

@@ -61,10 +61,14 @@ router.post("/merge", protect, async (req, res) => {
     try{
         const {sourceId, targetId} = req.body;
         console.log("Merge request:", { sourceId, targetId, user: req.user && req.user._id ? req.user._id : req.user });
-        // source house = house user is dragging
-        const source = await House.findOne({_id: sourceId, user: req.user, deleted: false});
-        // target house = house user is merging into
-        const target = await House.findOne({_id: targetId, user: req.user, deleted: false});
+        
+        // fetch both houses and counts in parallel to reduce network round trips
+        const [source, target, srcCount, tgtCount] = await Promise.all([
+            House.findOne({_id: sourceId, user: req.user, deleted: false}),
+            House.findOne({_id: targetId, user: req.user, deleted: false}),
+            Coinling.countDocuments({house: sourceId, dead: false}),
+            Coinling.countDocuments({house: targetId, dead: false})
+        ]);
 
         if(!source || !target){
             return res.status(404).json({message: "One or both houses not found!"});
@@ -87,9 +91,6 @@ router.post("/merge", protect, async (req, res) => {
             return res.status(400).json({message: "Already at maximum capacity, can't merge!"});
         }
 
-        const srcCount = await Coinling.countDocuments({house: source._id, dead: false});
-        const tgtCount = await Coinling.countDocuments({house: target._id, dead: false});
-
         if(srcCount < srcCap || tgtCount < tgtCap){
             return res.status(400).json({
                 message: "Both houses must be full before merging!",
@@ -98,18 +99,17 @@ router.post("/merge", protect, async (req, res) => {
             });
         }
 
-        // update & upgrade target house
+        // execute final operations in parallel
         target.capacity = srcCap * 2;
-        await target.save();
+        await Promise.all([
+            target.save(),
+            Coinling.updateMany(
+                {house: source._id},
+                {$set: {house: target._id}}
+            ),
+            House.deleteOne({_id: source._id})
+        ]);
 
-        // move residents to target house
-        await Coinling.updateMany(
-            {house: source._id},
-            {$set: {house: target._id}}
-        );
-
-        // delete source house
-        await House.deleteOne({_id: source._id});
         res.json({ message: "Houses merged successfully!", mergedHouse: target });
     }catch (err){
         console.error("Merge error:", err);

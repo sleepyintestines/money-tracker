@@ -2,25 +2,26 @@ import { useState } from "react"
 import { Link } from "react-router-dom"
 import axios from "axios"
 
-import "../../css/auth.css"
-
 export default function register({ onRegister }){
-    const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPswd, setConfirmPswd] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const handleRegister = async (e) => {
         e.preventDefault();
+        setLoading(true);
+        setError("");
 
         if(password !== confirmPswd){
+            setLoading(false);
             return setError("Passwords do not match!");
         }
 
         try{
             const { data } = await axios.post("http://localhost:5000/api/auth/register",
-                { username, email, password },
+                { email, password },
                 { headers: { "Content-Type": "application/json" } }
             );
             
@@ -32,52 +33,183 @@ export default function register({ onRegister }){
             } else {
                 setError("An error occurred. Please try again.");
             }
+        } finally {
+            setLoading(false);
         }
     };
 
-
     return (
-        <div className="auth-page">
-            <div className="rmaintxt">
-                <h2>Create an Account</h2>
+        <div style={{
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundImage: "url('/backgrounds/authbg.png')",
+            padding: "20px"
+        }}>
+            <div style={{
+                backgroundColor: "white",
+                borderRadius: "8px",
+                boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
+                padding: "40px",
+                width: "100%",
+                maxWidth: "400px",
+                fontFamily: "'Roboto', sans-serif"
+            }}>
+                <h2 style={{
+                    textAlign: "center",
+                    color: "#333",
+                    marginBottom: "30px",
+                    fontSize: "43px",
+                    fontWeight: "bold"
+                }}>Create an Account</h2>
+                <form onSubmit={handleRegister}>
+                    <div style={{ marginBottom: "20px" }}>
+                        <label style={{
+                            display: "block",
+                            color: "#555",
+                            fontSize: "20px",
+                            fontWeight: "bold",
+                            textAlign: "left"
+                        }}>
+                            Email
+                        </label>
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            style={{
+                                width: "100%",
+                                padding: "12px",
+                                fontSize: "15px",
+                                border: "1px solid #ddd",
+                                borderRadius: "6px",
+                                boxSizing: "border-box",
+                                transition: "border-color 0.3s",
+                                outline: "none",
+                                fontFamily: "'Roboto', sans-serif"
+                            }}
+                            onFocus={(e) => e.target.style.borderColor = "#4f3fcc"}
+                            onBlur={(e) => e.target.style.borderColor = "#ddd"}
+                        />
+                    </div>
+
+                    <div style={{ marginBottom: "20px" }}>
+                        <label style={{
+                            display: "block",
+                            color: "#555",
+                            fontSize: "20px",
+                            fontWeight: "bold",
+                            textAlign: "left"
+                        }}>
+                            Password
+                        </label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            style={{
+                                width: "100%",
+                                padding: "12px",
+                                fontSize: "15px",
+                                border: "1px solid #ddd",
+                                borderRadius: "6px",
+                                boxSizing: "border-box",
+                                transition: "border-color 0.3s",
+                                outline: "none",
+                                fontFamily: "'Roboto', sans-serif"
+                            }}
+                            onFocus={(e) => e.target.style.borderColor = "#4f3fcc"}
+                            onBlur={(e) => e.target.style.borderColor = "#ddd"}
+                        />
+                    </div>
+
+                    <div style={{ marginBottom: "20px" }}>
+                        <label style={{
+                            display: "block",
+                            color: "#555",
+                            fontSize: "20px",
+                            fontWeight: "bold",
+                            textAlign: "left"
+                        }}>
+                            Confirm Password
+                        </label>
+                        <input
+                            type="password"
+                            value={confirmPswd}
+                            onChange={(e) => setConfirmPswd(e.target.value)}
+                            required
+                            style={{
+                                width: "100%",
+                                padding: "12px",
+                                fontSize: "15px",
+                                border: "1px solid #ddd",
+                                borderRadius: "6px",
+                                boxSizing: "border-box",
+                                transition: "border-color 0.3s",
+                                outline: "none",
+                                fontFamily: "'Roboto', sans-serif"
+                            }}
+                            onFocus={(e) => e.target.style.borderColor = "#4f3fcc"}
+                            onBlur={(e) => e.target.style.borderColor = "#ddd"}
+                        />
+                    </div>
+
+                    {error && (
+                        <div style={{
+                            padding: "12px",
+                            marginBottom: "20px",
+                            backgroundColor: "#fee",
+                            color: "#c33",
+                            borderRadius: "6px",
+                            fontSize: "14px",
+                            border: "1px solid #fcc"
+                        }}>
+                            {error}
+                        </div>
+                    )}
+
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        style={{
+                            width: "100%",
+                            padding: "14px",
+                            backgroundColor: loading ? "#4f3fcc" : "#372a9f",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            fontSize: "16px",
+                            fontWeight: "600",
+                            cursor: loading ? "not-allowed" : "pointer",
+                            transition: "background-color 0.3s",
+                            marginTop: "10px"
+                        }}
+                        onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = "#372a9f")}
+                        onMouseLeave={(e) => !loading && (e.target.style.backgroundColor = "#4f3fcc")}
+                    >
+                        {loading ? "Registering..." : "Register"}
+                    </button>
+                </form>
+
+                <p style={{
+                    marginTop: "24px",
+                    textAlign: "center",
+                    color: "#666",
+                    fontSize: "14px"
+                }}>
+                    Already have an account?{" "}
+                    <Link to="/login" style={{
+                        color: "#4f3fcc",
+                        textDecoration: "none",
+                        fontWeight: "600"
+                    }}>
+                        Login here
+                    </Link>
+                </p>
             </div>
-           
-            <form onSubmit={handleRegister}>
-                <input
-                    placeholder="Username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                />
-
-                <input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                />
-
-                <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-
-                <input
-                    type="password"
-                    placeholder="Confirm Password"
-                    value={confirmPswd}
-                    onChange={(e) => setConfirmPswd(e.target.value)}
-                />
-
-                {error && <p style={{ color: "red" }}>{error}</p>}
-
-                <button type="submit">Sign up</button>
-            </form>
-
-            <p>
-                Already have an account? <Link to="/login">Login</Link>
-            </p>
         </div>
     );
 }

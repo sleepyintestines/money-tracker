@@ -10,6 +10,7 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   text-align: center;
   z-index: 0;
+  font-family: 'Roboto', sans-serif;
 }
 
 .app h1 {
@@ -35,14 +36,14 @@
   border-radius: 4px;
   font-size: 16px;
   cursor: pointer;
-  background-color: #007bff;
+  background-color: #4f3fcc;
   color: white;
   transition: background-color 0.3s;
   align-self: center;
 }
 
 .controls button:hover {
-  background-color: #0056b3;
+  background-color: #372a9f;
 }
 
 /*taskbar*/
