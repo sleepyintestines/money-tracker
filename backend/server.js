@@ -16,6 +16,11 @@ const app = express();
 app.use(express.json());
 app.use(cors({}));
 
+// health check route
+app.get("/", (_req, res) => {
+    res.json({ message: "Money Tracker API is running!" });
+});
+
 // register routes
 app.use("/api/auth", authRoutes);
 app.use("/api/resident", residentRoutes);

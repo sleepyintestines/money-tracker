@@ -2,9 +2,11 @@ import axios from "axios"
 
 // helper function to make http requests to the api
 export const apiFetch = async (path, { body, method = "GET", token, headers = {} } = {}) => {
+    const apiUrl = import.meta.env.VITE_API_URL || "";
+    
     try {
         const res = await axios({
-            url: `/api${path}`,
+            url: `${apiUrl}/api${path}`,
             method,
             headers: {
                 "Content-Type": "application/json",
