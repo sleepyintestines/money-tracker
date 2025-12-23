@@ -1,37 +1,37 @@
 import express from "express"
-import Coinling from "../schemas/Coinling.js"
+import Resident from "../schemas/Resident.js"
 import { protect } from "../middleware/authm.js"
 import House from "../schemas/House.js";
 
 const router = express.Router();
 
-// get all coinlings of current user
+// get all residents of current user
 router.get("/", protect, async (req, res) => {
     try {
-        const coinlings = await Coinling.find({ user: req.user, dead: false }).sort({ createdAt: 1 });
-        res.json(coinlings);
+        const residents = await Resident.find({ user: req.user, dead: false }).sort({ createdAt: 1 });
+        res.json(residents);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 });
 
-// delete coinlings (mark as dead)
+// delete residents (mark as dead)
 router.delete("/:id", protect, async (req, res) => {
     try {
-        const coinling = await Coinling.findOne({ _id: req.params.id, user: req.user });
-        if (!coinling) {
-            return res.status(404).json({ message: "Coinling not found!" });
+        const resident = await Resident.findOne({ _id: req.params.id, user: req.user });
+        if (!resident) {
+            return res.status(404).json({ message: "Resident not found!" });
         }
 
-        coinling.dead = true;
-        await coinling.save();
-        res.json(coinling);
+        resident.dead = true;
+        await resident.save();
+        res.json(resident);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 });
 
-// rename coinling
+// rename resident
 router.patch("/:id/name", protect, async (req, res) => {
     try{
         const userId = req.user;
@@ -43,35 +43,35 @@ router.patch("/:id/name", protect, async (req, res) => {
         }
 
         // only update if it belongs to current user
-        const coinling = await Coinling.findOneAndUpdate(
+        const resident = await Resident.findOneAndUpdate(
             { _id: id, user: userId },
             { name: name.trim() },
             { new: true }
         );
 
-        if (!coinling) {
-            return res.status(404).json({ error: "Goober not found or unauthorized!" });
+        if (!resident) {
+            return res.status(404).json({ error: "Resident not found or unauthorized!" });
         }
 
-        res.json(coinling);
+        res.json(resident);
     }catch (err){
         res.status(500).json({message: err.message});
     }
 
 });
 
-// move coinlings across houses
+// move resident across houses
 router.patch("/:id/house", protect, async (req, res) => {
     try{
         const {houseId} = req.body;
-        const coinling = await Coinling.findOne({
+        const resident = await Resident.findOne({
             _id: req.params.id,
             user: req.user,
             dead: false
         });
 
-        if(!coinling){
-            return res.status(404).json({error: "Coinling not found!"});
+        if (!resident){
+            return res.status(404).json({error: "Resident not found!"});
         }
 
         // validate target house
@@ -86,7 +86,7 @@ router.patch("/:id/house", protect, async (req, res) => {
         }
 
         // check target house capacity
-        const count = await Coinling.countDocuments({
+        const count = await Resident.countDocuments({
             house: houseId,
             dead: false
         });
@@ -95,9 +95,9 @@ router.patch("/:id/house", protect, async (req, res) => {
             return res.status(400).json({error: "House is full!"});
         }
 
-        coinling.house = houseId;
-        await coinling.save();
-        res.json({coinling});
+        resident.house = houseId;
+        await resident.save();
+        res.json({ resident });
     }catch (err){
         res.status(500).json({error: err.message});
     }

@@ -1,7 +1,7 @@
 import express from "express"
 import Transaction from "../schemas/Transaction.js"
 import User from "../schemas/User.js"
-import Coinling from "../schemas/Coinling.js"
+import Resident from "../schemas/Resident.js"
 import House from "../schemas/House.js"
 import mongoose from "mongoose"
 import {protect} from "../middleware/authm.js"
@@ -11,11 +11,11 @@ import { getSprite } from "../utils/generateSprite.js"
 
 const router = express.Router();
 
-async function ensureCoinlingCount(userId, desiredCount){
+async function ensureResidentCount(userId, desiredCount){
     // convert userId string to ObjectId for proper database queries
     const userObjectId = new mongoose.Types.ObjectId(userId);
     
-    const alive = await Coinling.find({user: userObjectId, dead: false}).sort({createdAt: 1}).lean();
+    const alive = await Resident.find({user: userObjectId, dead: false}).sort({createdAt: 1}).lean();
     const aliveCount = alive.length;
 
     // create missing
@@ -24,15 +24,15 @@ async function ensureCoinlingCount(userId, desiredCount){
         
         // fetch houses once and get current counts in single aggregation query
         const houses = await House.find({ user: userObjectId, deleted: false }).lean();
-        const houseCounts = await Coinling.aggregate([
+        const houseCounts = await Resident.aggregate([
             { $match: { user: userObjectId, dead: false } },
             { $group: { _id: "$house", count: { $sum: 1 } } }
         ]);
         
         const countMap = new Map(houseCounts.map(v => [v._id.toString(), v.count]));
         
-        // prepare batch of coinlings to create
-        const coinlingsToCreate = [];
+        // prepare batch of residents to create
+        const residentsToCreate = [];
         let newHouses = [];
         
         for(let i = 0; i < need; i++){
@@ -80,7 +80,7 @@ async function ensureCoinlingCount(userId, desiredCount){
                 }
             }
 
-            // prepare coinling data
+            // prepare resident data
             const personality = randomPersonality();
             
             // manually generate rarity and sprite (since insertMany bypasses pre-save hooks)
@@ -90,7 +90,7 @@ async function ensureCoinlingCount(userId, desiredCount){
             else if (roll < 0.99) rarity = "rare";
             else rarity = "legendary";
             
-            coinlingsToCreate.push({
+            residentsToCreate.push({
                 user: userObjectId,
                 house: chosen._id || chosen.tempId, // use real id or temp id
                 name: randomName(),
@@ -117,18 +117,18 @@ async function ensureCoinlingCount(userId, desiredCount){
                 tempIdToRealId.set(newHouses[idx].tempId, house._id);
             });
             
-            // update house ids in coinlings
-            for (let i = 0; i < coinlingsToCreate.length; i++) {
-                const houseId = coinlingsToCreate[i].house;
+            // update house ids in residents
+            for (let i = 0; i < residentsToCreate.length; i++) {
+                const houseId = residentsToCreate[i].house;
                 if (typeof houseId === 'string' && houseId.startsWith('temp_')) {
-                    coinlingsToCreate[i].house = tempIdToRealId.get(houseId);
+                    residentsToCreate[i].house = tempIdToRealId.get(houseId);
                 }
             }
         }
         
-        // bulk create all coinlings at once
-        if (coinlingsToCreate.length > 0) {
-            await Coinling.insertMany(coinlingsToCreate);
+        // bulk create all residents at once
+        if (residentsToCreate.length > 0) {
+            await Resident.insertMany(residentsToCreate);
         }
 
         return;
@@ -137,10 +137,18 @@ async function ensureCoinlingCount(userId, desiredCount){
     // mark dead using bulk update
     if(aliveCount > desiredCount){
         const remove = aliveCount - desiredCount;
-        const toKill = alive.slice(0, remove);
+        
+        // randomly select residents to despawn using Fisher-Yates shuffle
+        const shuffled = [...alive];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        
+        const toKill = shuffled.slice(0, remove);
         const idsToKill = toKill.map(g => g._id);
 
-        await Coinling.updateMany(
+        await Resident.updateMany(
             { _id: { $in: idsToKill } },
             { $set: { dead: true } }
         );
@@ -229,23 +237,23 @@ router.post("/", protect, async(req, res) => {
             : userDoc.balance - amount;
         await userDoc.save();
 
-        // update amount of coinlings
+        // update amount of residents
         const desiredCount = Math.max(0, Math.floor(userDoc.balance / 1000));
-        await ensureCoinlingCount(req.user, desiredCount);
+        await ensureResidentCount(req.user, desiredCount);
 
-        // record all dead coinlings
-        const dead = await Coinling.find({
+        // record all dead residents
+        const dead = await Resident.find({
             user: req.user,
             dead: true,
-            // get all coinlings marked dead in last second
+            // get all residents marked dead in last second
             updatedAt: {$gte: new Date(Date.now() - 1000)}
         }).select('name sprite rarity');
 
-        // record all new coinlings
-        const birthed = await Coinling.find({
+        // record all new residents
+        const birthed = await Resident.find({
             user: req.user,
             dead: false,
-            // get all coinlings created in last second
+            // get all residents created in last second
             updatedAt: { $gte: new Date(Date.now() - 1000) }
         }).select('name sprite rarity');
 
@@ -369,14 +377,6 @@ router.get("/analytics/summary", protect, async(req, res) => {
         // previous months for comparison
         const lastMonthSpent = transactions
             .filter(t => t.type === "subtract" && new Date(t.date) >= lastMonthStart && new Date(t.date) < thisMonthStart)
-            .reduce((sum, t) => sum + t.amount, 0);
-
-        const twoMonthsAgoSpent = transactions
-            .filter(t => t.type === "subtract" && new Date(t.date) >= twoMonthsAgoStart && new Date(t.date) < lastMonthStart)
-            .reduce((sum, t) => sum + t.amount, 0);
-
-        const threeMonthsAgoSpent = transactions
-            .filter(t => t.type === "subtract" && new Date(t.date) >= threeMonthsAgoStart && new Date(t.date) < twoMonthsAgoStart)
             .reduce((sum, t) => sum + t.amount, 0);
 
         // lifetime totals

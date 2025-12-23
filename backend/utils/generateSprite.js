@@ -1,23 +1,17 @@
 export function getSprite(rarity){
     const spriteOptions = {
         common: [
-            "/sprites/coinling-sprites/common/common.png",
+            "/sprites/resident-sprites/common/common1.png",
+            "/sprites/resident-sprites/common/common2.png",
         ],
         rare: [
-            "/sprites/coinling-sprites/rare/rare.png",
-            "/sprites/coinling-sprites/rare/rare2.png",
-            "/sprites/coinling-sprites/rare/rare3.png",
-            "/sprites/coinling-sprites/rare/rare4.png",
-            "/sprites/coinling-sprites/rare/rare5.png",
-            "/sprites/coinling-sprites/rare/rare6.png",
-            "/sprites/coinling-sprites/rare/rare7.png",
-            "/sprites/coinling-sprites/rare/rare8.png",
-            "/sprites/coinling-sprites/rare/rare9.png",
-            "/sprites/coinling-sprites/rare/rare10.png",
-            "/sprites/coinling-sprites/rare/rare11.png",
+            "/sprites/resident-sprites/rare/rare1.png",
+            "/sprites/resident-sprites/rare/rare2.png",
+            "/sprites/resident-sprites/rare/rare3.png",
         ],
         legendary: [
-            "/sprites/coinling-sprites/legendary/legendary.png",
+            "/sprites/resident-sprites/legendary/legendary1.png",
+            "/sprites/resident-sprites/legendary/legendary2.png",
         ]
     };
 

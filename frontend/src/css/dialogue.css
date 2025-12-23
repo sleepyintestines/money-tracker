@@ -1,4 +1,4 @@
-.coinling-dialogue-overlay {
+.resident-dialogue-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -11,7 +11,7 @@
     background: rgba(0, 0, 0, 0.25);
 }
 
-.coinling-dialogue {
+.resident-dialogue {
     background: white;
     padding: 12px 16px;
     border-radius: 8px;
@@ -20,18 +20,18 @@
     font-family: 'Roboto', sans-serif;
 }
 
-.coinling-dialogue-header {
+.resident-dialogue-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 
-.coinling-dialogue-line {
+.resident-dialogue-line {
     margin-top: 8px;
     font-size: 14px;
 }
 
-.coinling-speech-bubble {
+.resident-speech-bubble {
     display: inline-block;
     max-width: 220px;
     padding: 8px 12px;
@@ -46,7 +46,7 @@
     font-family: 'Roboto', sans-serif;
 }
 
-.coinling-speech-bubble.above::after {
+.resident-speech-bubble.above::after {
     content: "";
     position: absolute;
     left: 50%;
@@ -58,7 +58,7 @@
     filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.08));
 }
 
-.coinling-speech-bubble.below::after {
+.resident-speech-bubble.below::after {
     content: "";
     position: absolute;
     left: 50%;
@@ -70,7 +70,7 @@
     filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.08));
 }
 
-.coinling-dialogue-header {
+.resident-dialogue-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -78,24 +78,24 @@
     margin-bottom: 6px;
 }
 
-.coinling-name {
+.resident-name {
     font-size: 13px;
 }
 
-.coinling-name-input {
+.resident-name-input {
     font-size: 13px;
     padding: 4px 6px;
     border-radius: 6px;
     border: 1px solid rgba(0, 0, 0, 0.12);
 }
 
-.coinling-dialogue-line {
+.resident-dialogue-line {
     font-size: 12px;
     color: #222;
     white-space: normal;
     word-break: break-word;
 }
 
-.coinling-speech-container {
+.resident-speech-container {
     cursor: default;
 }

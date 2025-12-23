@@ -2,18 +2,18 @@ import { useState } from "react"
 import axios from "axios"
 import "../../css/dialogue.css"
 
-function Dialogue({ coinling, screenRect, onClose, cameraScale = 1, onNameUpdated }) {
+function Dialogue({ resident, screenRect, onClose, cameraScale = 1, onNameUpdated }) {
     // chooses random index
-    const [index] = useState(() => coinling?.dialogues && coinling.dialogues.length ? Math.floor(Math.random() * coinling.dialogues.length) : 0);
+    const [index] = useState(() => resident?.dialogues && resident.dialogues.length ? Math.floor(Math.random() * resident.dialogues.length) : 0);
 
     const [isEditing, setIsEditing] = useState(false);
-    const [newName, setNewName] = useState(coinling?.name ?? "");
+    const [newName, setNewName] = useState(resident?.name ?? "");
     const [isSaving, setIsSaving] = useState(false);
 
-    if (!coinling || !screenRect) return null;
+    if (!resident || !screenRect) return null;
 
     // assigns dialogue line based on index
-    const line = coinling.dialogues && coinling.dialogues.length ? coinling.dialogues[index] : "They have nothing to say...";
+    const line = resident.dialogues && resident.dialogues.length ? resident.dialogues[index] : "They have nothing to say...";
     
     // calculates position for dialogue box
     const container = document.querySelector(".field > div");
@@ -25,38 +25,38 @@ function Dialogue({ coinling, screenRect, onClose, cameraScale = 1, onNameUpdate
     const bubbleX = localX + (screenRect.width / cameraScale) / 2;
     const bubbleY = localY;
 
-    const updateCoinlingName = async (coinlingId, name) => {
+    const updateResidentName = async (residentId, name) => {
         try {
             const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
             const token = userInfo.token;
-            const res = await axios.patch(`/api/coinling/${coinlingId}/name`, 
+            const res = await axios.patch(`/api/resident/${residentId}/name`, 
                 { name },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             return res.data;
         } catch (err) {
-            console.error("Failed to update coinling name:", err);
+            console.error("Failed to update resident name:", err);
             throw err;
         }
     };
 
     const handleSave = async () => {
-        if (!newName.trim() || newName === coinling.name) {
+        if (!newName.trim() || newName === resident.name) {
             setIsEditing(false);
-            setNewName(coinling.name);
+            setNewName(resident.name);
             return;
         }
 
         setIsSaving(true);
         try {
-            const updatedCoinling = await updateCoinlingName(coinling._id, newName);
+            const updatedResident = await updateResidentName(resident._id, newName);
             if (onNameUpdated) {
-                onNameUpdated(updatedCoinling);
+                onNameUpdated(updatedResident);
             }
             setIsEditing(false);
         } catch (err) {
             console.error("Error saving name:", err);
-            setNewName(coinling.name);
+            setNewName(resident.name);
         } finally {
             setIsSaving(false);
         }
@@ -65,7 +65,7 @@ function Dialogue({ coinling, screenRect, onClose, cameraScale = 1, onNameUpdate
     const handleKeyDown = (e) => {
         if (e.key === "Enter") handleSave();
         if (e.key === "Escape") {
-            setNewName(coinling.name);
+            setNewName(resident.name);
             setIsEditing(false);
         }
     };
@@ -81,12 +81,12 @@ function Dialogue({ coinling, screenRect, onClose, cameraScale = 1, onNameUpdate
 
     return (
         <div
-            className="coinling-speech-container"
+            className="resident-speech-container"
             style={style}
             onClick={(e) => e.stopPropagation()}
         >
-            <div className="coinling-speech-bubble above">
-                <div className="coinling-dialogue-header">
+            <div className="resident-speech-bubble above">
+                <div className="resident-dialogue-header">
                     {isEditing ? (
                         <input
                             type="text"
@@ -96,15 +96,15 @@ function Dialogue({ coinling, screenRect, onClose, cameraScale = 1, onNameUpdate
                             onBlur={handleSave}
                             onKeyDown={handleKeyDown}
                             autoFocus
-                            className="coinling-name-input"
+                            className="resident-name-input"
                         />
                     ) : (
                         <strong
-                            className="coinling-name"
+                                className="resident-name"
                             onClick={() => setIsEditing(true)}
                             style={{ cursor: 'pointer' }}
                         >
-                            {coinling.name ?? ""}
+                            {resident.name ?? ""}
                         </strong>
                     )}
                     <button onClick={onClose} style={{ marginLeft: 8 }}>
@@ -112,7 +112,7 @@ function Dialogue({ coinling, screenRect, onClose, cameraScale = 1, onNameUpdate
                     </button>
                 </div>
 
-                <div className="coinling-dialogue-line">{line}</div>
+                <div className="resident-dialogue-line">{line}</div>
             </div>
         </div>
     );

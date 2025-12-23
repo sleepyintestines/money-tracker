@@ -13,6 +13,7 @@ import History from "../pages/functions/history.jsx"
 import Analytics from "../pages/functions/analytics.jsx"
 import Journal from "../components/journal.jsx"
 import ErrorModal from "../components/errorModal.jsx"
+import Introduction from "../components/introduction.jsx"
 
 import List from "../pages/other/list.jsx"
 
@@ -29,7 +30,7 @@ function Content() {
 
   const [balance, setBalance] = useState(() => user?.balance ?? 0);
   const [transactions, setTransactions] = useState([]);
-  const [coinlings, setCoinlings] = useState([]);
+  const [residents, setResidents] = useState([]);
   const [modal, setModal] = useState(null);
   const [hidden, setHidden] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -39,6 +40,7 @@ function Content() {
   const [show, setShow] = useState(true);
   const [journal, setJournal] = useState(false);
   const [list, setList] = useState([]);
+  const [introduction, setIntroduction] = useState(false);
 
   const navigate = useNavigate();
 
@@ -56,10 +58,10 @@ function Content() {
         console.log("Transactions fetched:", tx);
         setTransactions(tx);
 
-        // get coinlings
-        const g = await apiFetch("/coinling", { token: user.token });
-        console.log("Coinlings fetched:", g);
-        setCoinlings(g);
+        // get residents
+        const g = await apiFetch("/resident", { token: user.token });
+        console.log("Residents fetched:", g);
+        setResidents(g);
 
         // set balance
         setBalance(user.balance ?? 0);
@@ -104,11 +106,11 @@ function Content() {
       // persist to localStorage
       localStorage.setItem("userInfo", JSON.stringify(updatedUser));
 
-      // refresh & update amount of coinlings
-      const g = await apiFetch("/coinling", { token: user.token });
-      setCoinlings(g);
+      // refresh & update amount of residents
+      const g = await apiFetch("/resident", { token: user.token });
+      setResidents(g);
 
-      // show list of new coinlings
+      // show list of new residents
       if (res.birthed && res.birthed.length > 0) {
         setList(res.birthed);
         setModal("birthed");
@@ -140,11 +142,11 @@ function Content() {
       // persist to localStorage
       localStorage.setItem("userInfo", JSON.stringify(updatedUser));
 
-      // refresh & update amount of coinlings
-      const g = await apiFetch("/coinling", { token: user.token });
-      setCoinlings(g);
+      // refresh & update amount of residents
+      const g = await apiFetch("/resident", { token: user.token });
+      setResidents(g);
 
-      // show list of killed coinlings
+      // show list of killed residents
       if(res.dead && res.dead.length > 0){
         setList(res.dead);
         setModal("dead");
@@ -155,13 +157,13 @@ function Content() {
     }
   };
 
-  const refreshCoinlings = async () => {
+  const refreshResidents = async () => {
     if (!user) return;
     try{
-      const g = await apiFetch("/coinling", {token: user.token});
-      setCoinlings(g);
+      const g = await apiFetch("/resident", {token: user.token});
+      setResidents(g);
     }catch (err){
-      console.error("Failed to refresh coinlings ->", err);
+      console.error("Failed to refresh residents ->", err);
     }
   }
 
@@ -175,7 +177,7 @@ function Content() {
         token
       });
 
-      await refreshCoinlings();
+      await refreshResidents();
     } catch (err) {
       console.error("Failed to create house ->", err);
       setErrorMessage(err.message || "Failed to create house");
@@ -190,6 +192,10 @@ function Content() {
     setJournal(!journal);
   };
 
+  const toggleIntroduction = () => {
+    setIntroduction(!introduction);
+  };
+
   // delete an empty house
   const deleteHouse = async (houseId) => {
     if (!user) return;
@@ -199,14 +205,14 @@ function Content() {
         token: user.token
       });
 
-      await refreshCoinlings();
+      await refreshResidents();
     } catch (err) {
       console.error("Failed to delete house ->", err);
       setErrorMessage(err.message || "House must be empty!");
     }
   };
 
-  // toggle to show coinlings residing in houses
+  // toggle to show residents residing in houses
   const toggleDisplay = () => {
     setShow(prev => !prev);
   };
@@ -240,7 +246,8 @@ function Content() {
               <Register onRegister={(u) => { 
                 localStorage.setItem("token", u.token); 
                 setIsLoading(true); 
-                setUser(u); 
+                setUser(u);
+                setIntroduction(true);
               }} />
           )
         }
@@ -283,8 +290,8 @@ function Content() {
           ) : (
             <>
               <Overworld 
-                coinlings={coinlings} 
-                onRefresh={refreshCoinlings} 
+                residents={residents} 
+                onRefresh={refreshResidents} 
                 deleteMode={deleteMode} 
                 onDeleteHouse={deleteHouse}
                 show={show}
@@ -347,6 +354,12 @@ function Content() {
                   onClose={() => setErrorMessage(null)}
                   message={errorMessage}
                 />
+              )}
+              {introduction && (
+                <Introduction onClose={() => setIntroduction(false)} />
+              )}
+              {introduction && (
+                <Introduction onClose={() => setIntroduction(false)} />
               )}
 
               {!hidden && (

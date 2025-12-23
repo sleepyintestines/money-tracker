@@ -1,6 +1,6 @@
 import express from "express"
 import House from "../schemas/House.js"
-import Coinling from "../schemas/Coinling.js"
+import Resident from "../schemas/Resident.js"
 import { protect } from "../middleware/authm.js"
 
 const router = express.Router();
@@ -15,7 +15,7 @@ router.get("/", protect, async (req, res) => {
     }
 });
 
-// get single house and its coinlings
+// get single house and its residents
 router.get("/:id", protect, async (req, res) => {
     try {
         console.log("Fetching house:", {houseId: req.params.id, userId: req.user, deleted: false});
@@ -25,8 +25,8 @@ router.get("/:id", protect, async (req, res) => {
             return res.status(404).json({message: "House not found"});
         } 
 
-        const coinlings = await Coinling.find({house: house._id, dead: false});
-        res.json({house, coinlings});
+        const residents = await Resident.find({house: house._id, dead: false});
+        res.json({ house, residents });
     } catch (err) {
         console.error("Error fetching house:", err);
         res.status(500).json({message: err.message});
@@ -66,8 +66,8 @@ router.post("/merge", protect, async (req, res) => {
         const [source, target, srcCount, tgtCount] = await Promise.all([
             House.findOne({_id: sourceId, user: req.user, deleted: false}),
             House.findOne({_id: targetId, user: req.user, deleted: false}),
-            Coinling.countDocuments({house: sourceId, dead: false}),
-            Coinling.countDocuments({house: targetId, dead: false})
+            Resident.countDocuments({house: sourceId, dead: false}),
+            Resident.countDocuments({house: targetId, dead: false})
         ]);
 
         if(!source || !target){
@@ -103,7 +103,7 @@ router.post("/merge", protect, async (req, res) => {
         target.capacity = srcCap * 2;
         await Promise.all([
             target.save(),
-            Coinling.updateMany(
+            Resident.updateMany(
                 {house: source._id},
                 {$set: {house: target._id}}
             ),
@@ -152,7 +152,7 @@ router.delete("/:id", protect, async (req, res) => {
         }
 
         // check if house is empty
-        const count = await Coinling.countDocuments({
+        const count = await Resident.countDocuments({
             house: house._id,
             dead: false
         });

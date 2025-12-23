@@ -2,6 +2,8 @@ import { useState } from "react"
 import { Link } from "react-router-dom"
 import axios from "axios"
 
+import Password from "../../components/password.jsx"
+
 export default function register({ onRegister }){
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -20,7 +22,8 @@ export default function register({ onRegister }){
         }
 
         try{
-            const { data } = await axios.post("http://localhost:5000/api/auth/register",
+            const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+            const { data } = await axios.post(`${apiUrl}/api/auth/register`,
                 { email, password },
                 { headers: { "Content-Type": "application/json" } }
             );
@@ -96,64 +99,20 @@ export default function register({ onRegister }){
                     </div>
 
                     <div style={{ marginBottom: "20px" }}>
-                        <label style={{
-                            display: "block",
-                            color: "#555",
-                            fontSize: "20px",
-                            fontWeight: "bold",
-                            textAlign: "left"
-                        }}>
-                            Password
-                        </label>
-                        <input
-                            type="password"
+                        <Password
+                            label="Password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
-                            style={{
-                                width: "100%",
-                                padding: "12px",
-                                fontSize: "15px",
-                                border: "1px solid #ddd",
-                                borderRadius: "6px",
-                                boxSizing: "border-box",
-                                transition: "border-color 0.3s",
-                                outline: "none",
-                                fontFamily: "'Roboto', sans-serif"
-                            }}
-                            onFocus={(e) => e.target.style.borderColor = "#4f3fcc"}
-                            onBlur={(e) => e.target.style.borderColor = "#ddd"}
                         />
                     </div>
 
                     <div style={{ marginBottom: "20px" }}>
-                        <label style={{
-                            display: "block",
-                            color: "#555",
-                            fontSize: "20px",
-                            fontWeight: "bold",
-                            textAlign: "left"
-                        }}>
-                            Confirm Password
-                        </label>
-                        <input
-                            type="password"
+                        <Password
+                            label="Confirm Password"
                             value={confirmPswd}
                             onChange={(e) => setConfirmPswd(e.target.value)}
                             required
-                            style={{
-                                width: "100%",
-                                padding: "12px",
-                                fontSize: "15px",
-                                border: "1px solid #ddd",
-                                borderRadius: "6px",
-                                boxSizing: "border-box",
-                                transition: "border-color 0.3s",
-                                outline: "none",
-                                fontFamily: "'Roboto', sans-serif"
-                            }}
-                            onFocus={(e) => e.target.style.borderColor = "#4f3fcc"}
-                            onBlur={(e) => e.target.style.borderColor = "#ddd"}
                         />
                     </div>
 

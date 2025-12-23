@@ -5,14 +5,14 @@ import { apiFetch } from "../../fetch.js"
 
 import "../../css/overworld.css";
 
-function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = false, modal = null, onError}) {
+function overworld({residents, onRefresh, deleteMode, onDeleteHouse, show = false, modal = null, onError}) {
     const [houses, setHouses] = useState([]);
 
     const [residentAmount, setResidentAmount] = useState({});
     const [draggingHouse, setDraggingHouse] = useState(null);
     const [hoveredHouse, setHoveredHouse] = useState(null);
-    const [draggingCoinling, setDraggingCoinling] = useState(null);
-    const [coinlingDragOffset, setCoinlingDragOffset] = useState({x: 0, y: 0});
+    const [draggingResident, setDraggingResident] = useState(null);
+    const [residentDragOffset, setResidentDragOffset] = useState({x: 0, y: 0});
     const [showTooltip, setShowTooltip] = useState(null);
 
     const {
@@ -53,11 +53,11 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = fals
         }
     };
 
-    // get amount of coinlings inside a house
+    // get amount of residents inside a house
     const fetchCount = async () => {
         const counts = {};
         for(const v of houses){
-            counts[v._id] = coinlings.filter(g => g.house === v._id && !g.dead).length;
+            counts[v._id] = residents.filter(g => g.house === v._id && !g.dead).length;
         }
 
         setResidentAmount(counts);
@@ -142,14 +142,14 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = fals
         fetchHouses();
     }, []);
 
-    // refetch houses when coinlings change
+    // refetch houses when residents change
     useEffect(() => {
         fetchHouses();
-    }, [coinlings]);
+    }, [residents]);
 
     useEffect(() => {
         fetchCount();
-    }, [houses, coinlings]);
+    }, [houses, residents]);
 
     // drag logic (houses)
     useEffect(() => {
@@ -207,79 +207,79 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = fals
         };
     }, [draggingHouse, houses]);
 
-    // move coinlings across houses
-    const moveCoinling = async (coinlingId, houseId) => {
+    // move residents across houses
+    const moveResident = async (residentId, houseId) => {
         const token = localStorage.getItem("token");
-        await apiFetch(`/coinling/${coinlingId}/house`, {
+        await apiFetch(`/resident/${residentId}/house`, {
             method: "PATCH",
             body: {houseId},
             token
         });
     }
 
-    const handleCoinlingMouseDown = useCallback((e, coinling, house) => {
+    const handleResidentMouseDown = useCallback((e, resident, house) => {
         if (deleteMode) return; // don't drag in delete mode
 
         e.stopPropagation();
         const rect = e.currentTarget.getBoundingClientRect();
-        setCoinlingDragOffset({
+        setResidentDragOffset({
             x: e.clientX - rect.left,
             y: e.clientY - rect.top
         });
-        setDraggingCoinling({...coinling, sourceHouse: house});
+        setDraggingResident({...resident, sourceHouse: house});
     }, [deleteMode]);
 
-    const handleCoinlingMove = useCallback((e) => {
-        if (!draggingCoinling) return;
+    const handleResidentMove = useCallback((e) => {
+        if (!draggingResident) return;
 
         const fieldRect = fieldRef.current?.getBoundingClientRect();
         if (!fieldRect) return;
-        const leftPercent = ((e.clientX - fieldRect.left - coinlingDragOffset.x) / fieldRect.width) * 100;
-        const topPercent = ((e.clientY - fieldRect.top - coinlingDragOffset.y) / fieldRect.height) * 100;
+        const leftPercent = ((e.clientX - fieldRect.left - residentDragOffset.x) / fieldRect.width) * 100;
+        const topPercent = ((e.clientY - fieldRect.top - residentDragOffset.y) / fieldRect.height) * 100;
 
-        setDraggingCoinling(prev => ({
+        setDraggingResident(prev => ({
             ...prev,
             leftPercent,
             topPercent
         }));
-    }, [draggingCoinling, coinlingDragOffset]);
+    }, [draggingResident, residentDragOffset]);
 
-    const handleCoinlingMouseUp = useCallback(async (e) => {
-        if (!draggingCoinling) return;
+    const handleResidentMouseUp = useCallback(async (e) => {
+        if (!draggingResident) return;
 
-        // find which house the coinling was dropped on
+        // find which house the resident was dropped on
         const targetHouse = houses.find(v => {
             const distance = Math.sqrt(
-                Math.pow(v.leftPercent - draggingCoinling.leftPercent, 2) +
-                Math.pow(v.topPercent - draggingCoinling.topPercent, 2)
+                Math.pow(v.leftPercent - draggingResident.leftPercent, 2) +
+                Math.pow(v.topPercent - draggingResident.topPercent, 2)
             );
             return distance < 5;
         });
 
         // if dropped on a different house, move it
-        if (targetHouse && targetHouse._id !== draggingCoinling.sourceHouse._id) {
+        if (targetHouse && targetHouse._id !== draggingResident.sourceHouse._id) {
             try {
-                await moveCoinling(draggingCoinling._id, targetHouse._id);
+                await moveResident(draggingResident._id, targetHouse._id);
                 onRefresh();
             } catch (error) {
-                console.error("Failed to move coinling ->", error);
-                if (onError) onError("Failed to move coinling. House might be full.");
+                console.error("Failed to move resident ->", error);
+                if (onError) onError("Failed to move resident. House might be full.");
             }
         }
 
-        setDraggingCoinling(null);
-    }, [draggingCoinling, houses, onRefresh]);
+        setDraggingResident(null);
+    }, [draggingResident, houses, onRefresh]);
 
-    // coinling drag logic
+    // resident drag logic
     useEffect(() => {
-        if (!draggingCoinling) return;
+        if (!draggingResident) return;
 
         const handleMouseMove = (e) => {
-            handleCoinlingMove(e);
+            handleResidentMove(e);
         };
 
         const handleMouseUp = (e) => {
-            handleCoinlingMouseUp(e);
+            handleResidentMouseUp(e);
         };
 
         document.addEventListener("mousemove", handleMouseMove);
@@ -289,7 +289,7 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = fals
             document.removeEventListener("mousemove", handleMouseMove);
             document.removeEventListener("mouseup", handleMouseUp);
         };
-    }, [draggingCoinling, handleCoinlingMove, handleCoinlingMouseUp]);
+    }, [draggingResident, handleResidentMove, handleResidentMouseUp]);
 
     const cursorStyle = camera.scale > MIN_SCALE + 0.001 ? "grab" : "default";
 
@@ -424,21 +424,21 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = fals
                         </div>
                     );
                 })}
-                {/* render coinlings from each house */}
+                {/* render residents from each house */}
                 {show && houses.map(house => {
-                    const houseCoinlings = coinlings.filter(g => g.house === house._id && !g.dead);
+                    const houseResidents = residents.filter(g => g.house === house._id && !g.dead);
 
-                    return houseCoinlings.map((coinling, index) => {
-                        // position coinlings around their house in a circle pattern
-                        const angle = (index / Math.max(houseCoinlings.length, 1)) * 2 * Math.PI;
+                    return houseResidents.map((resident, index) => {
+                        // position residents around their house in a circle pattern
+                        const angle = (index / Math.max(houseResidents.length, 1)) * 2 * Math.PI;
 
                         // calculate radius dynamically 
-                        const spacing = 2; // space between coinlings
+                        const spacing = 2; // space between residents
                         const minRadius = { 8: 4, 16: 5.5, 32: 7, 64: 9, 128: 12 }[house.capacity] || 4;
                         const maxRadius = { 8: 5, 16: 7, 32: 9, 64: 12, 128: 15 }[house.capacity] || 10;
 
                         // calculate required radius for even spacing: circumference = 2πr, spacing = circumference / count
-                        const requiredRadius = (houseCoinlings.length * spacing) / (2 * Math.PI);
+                        const requiredRadius = (houseResidents.length * spacing) / (2 * Math.PI);
                         const radius = Math.min(maxRadius, Math.max(minRadius, requiredRadius));
 
                         const offsetX = Math.cos(angle) * radius;
@@ -447,15 +447,15 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = fals
                         const left = house.leftPercent + offsetX;
                         const top = house.topPercent + offsetY;
 
-                        // if coinling is being dragged, use dragging position
-                        const isBeingDragged = draggingCoinling?._id === coinling._id;
-                        const displayLeft = isBeingDragged ? draggingCoinling.leftPercent : left;
-                        const displayTop = isBeingDragged ? draggingCoinling.topPercent : top;
+                        // if resident is being dragged, use dragging position
+                        const isBeingDragged = draggingResident?._id === resident._id;
+                        const displayLeft = isBeingDragged ? draggingResident.leftPercent : left;
+                        const displayTop = isBeingDragged ? draggingResident.topPercent : top;
 
                         return (
                             <div
-                                key={coinling._id}
-                                onMouseDown={(e) => handleCoinlingMouseDown(e, coinling, house)}
+                                key={resident._id}
+                                onMouseDown={(e) => handleResidentMouseDown(e, resident, house)}
                                 style={{
                                     position: "absolute",
                                     left: `${displayLeft}%`,
@@ -468,11 +468,11 @@ function overworld({coinlings, onRefresh, deleteMode, onDeleteHouse, show = fals
                                     transform: `translate(-50%, -50%) ${isBeingDragged ? "scale(2)" : "scale(1)"}`,
                                     transition: isBeingDragged ? "none" : "transform 0.15s ease",
                                 }}
-                                title={coinling.name}
+                                title={resident.name}
                             >
                                 <img
-                                    src={coinling.sprite}
-                                    alt={coinling.name}
+                                    src={resident.sprite}
+                                    alt={resident.name}
                                     style={{
                                         width: "100%",
                                         height: "100%",

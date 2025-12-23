@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useParams } from "react-router-dom"
-import Coinling from "./coinling.jsx"
-import useCoinlings from "./useCoinlings.js"
+import Resident from "./resident.jsx"
+import useResidents from "./useResidents.js"
 import Dialogue from "./dialogue.jsx"
 import { Camera } from "./camera.js"
 import { apiFetch } from "../../fetch.js"
@@ -10,7 +10,7 @@ function view({hideHeader}) {
     const { id } = useParams();
     const [house, setHouse] = useState(null);
     const [selected, setSelected] = useState(null); 
-    const [coinlings, setCoinlings] = useState([]);
+    const [residents, setResidents] = useState([]);
     const [isEditing, setIsEditing] = useState(false);
     const [newName, setNewName] = useState("");
     const [isSaving, setIsSaving] = useState(false);
@@ -41,13 +41,13 @@ function view({hideHeader}) {
     const playableAreaPercent = house ? getPlayableAreaPercent(house.capacity) : 100;
     const centerOffset = (100 - playableAreaPercent) / 2;
 
-    // helper to close selected dialogue and unpause/resume the coinling
+    // helper to close selected dialogue and unpause/resume the resident
     const closeSelected = (sel = selected) => {
         if (!sel) return;
 
         const i = sel.index;
-        const coinlingEl = document.querySelectorAll(".coinling");
-        const el = coinlingEl[i];
+        const residentEl = document.querySelectorAll(".resident");
+        const el = residentEl[i];
         if (el) el.style.transition = "none";
 
         setPositions((prev) =>
@@ -68,7 +68,7 @@ function view({hideHeader}) {
         setSelected(null);
     };
 
-    // close dialogue whenever the user uses the scroll wheel; ensures coinling is unpaused
+    // close dialogue whenever the user uses the scroll wheel; ensures resident is unpaused
     useEffect(() => {
         if (!selected) return;
         // lastWheel updates on any wheel event
@@ -79,7 +79,7 @@ function view({hideHeader}) {
     useEffect(() => {
         if (!selected) return;
 
-        const el = document.querySelectorAll(".coinling")[selected.index];
+        const el = document.querySelectorAll(".resident")[selected.index];
         if (!el) return;
 
         const rect = el.getBoundingClientRect();
@@ -94,7 +94,7 @@ function view({hideHeader}) {
                 const payload = await apiFetch(`/houses/${id}`, {token});
 
                 setHouse(payload.house);
-                setCoinlings(payload.coinlings || []);
+                setResidents(payload.residents || []);
                 setNewName(payload.house.name || "House");
             } catch (err) {
                 console.error("Failed to load house:", err);
@@ -103,8 +103,8 @@ function view({hideHeader}) {
         fetchHouse();
     }, [id]);
 
-    const count = coinlings.length;
-    const {positions, setPositions} = useCoinlings(count, playableAreaPercent, centerOffset);
+    const count = residents.length;
+    const {positions, setPositions} = useResidents(count, playableAreaPercent, centerOffset);
 
     // edit house name
     const updateHouseName = async (houseId, name) => {
@@ -236,9 +236,9 @@ function view({hideHeader}) {
                 ></div>
 
                 {positions.map((p, i) => (
-                    <Coinling
+                    <Resident
                         key={i}
-                        coinling={coinlings[i]}
+                        resident={residents[i]}
                         ref={(el) => {
                             if (el && selected?.index === i && !selected.rect) {
                                 const rect = el.getBoundingClientRect();
@@ -309,19 +309,19 @@ function view({hideHeader}) {
 
                 {selected?.rect && (
                     <Dialogue
-                        coinling={{...coinlings[selected.index], position: positions[selected.index]}}
+                        resident={{...residents[selected.index], position: positions[selected.index]}}
                         screenRect={selected.rect}
                         cameraScale={camera.scale}
-                        onNameUpdated={(updatedCoinling) => {
-                            setCoinlings((prev) =>
+                        onNameUpdated={(updatedResident) => {
+                            setResidents((prev) =>
                                 prev.map((c, idx) =>
-                                    idx === selected.index ? updatedCoinling : c
+                                    idx === selected.index ? updatedResident : c
                                 )
                             );
                         }}
                         onClose={() => {
-                            const coinlingEl = document.querySelectorAll(".coinling");
-                            const el = coinlingEl[selected.index];
+                            const residentEl = document.querySelectorAll(".resident");
+                            const el = residentEl[selected.index];
 
                             if (el) el.style.transition = "";
 

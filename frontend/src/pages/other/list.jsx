@@ -12,10 +12,10 @@ function list({ onClose, list, type = "dead" }){
     }, [onClose]);
 
     const isNew = type === "new";
-    const title = isNew ? "New Coinlings!" : "Coinlings Killed!";
+    const title = isNew ? "New COINLINGS!" : "COINLINGS Killed!";
     const message = isNew
-        ? `${list.length} new coinlings${list.length !== 1 ? "s" : ""} joined your world!`
-        : `${list.length} coinlings${list.length !== 1 ? "s" : ""} died in this transaction`;
+        ? `${list.length} new COINLINGS${list.length !== 1 ? "s" : ""} joined your world!`
+        : `${list.length} COINLINGS${list.length !== 1 ? "s" : ""} died in this transaction`;
 
     return (
         <div className="modal-overlay" onClick={onClose}>

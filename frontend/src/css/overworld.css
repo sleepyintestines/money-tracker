@@ -16,18 +16,18 @@ body {
     user-select: none;
 }
 
-.coinling {
+.resident {
     position: absolute;
     width: auto;
     height: auto;
     transform-origin: center bottom;
 }
 
-.coinling-moving {
+.resident-moving {
     animation: rock 0.6s ease-in-out infinite alternate;
 }
 
-.coinling-moving.facing-right {
+.resident-moving.facing-right {
     animation: rock-right 0.6s ease-in-out infinite alternate;
 }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, forwardRef } from "react"
 
-const coinling = forwardRef(function Coinling({ coinling, position, onMove, onDragEnd, onClick, canDrag = true, playableAreaPercent = 100, playableAreaOffset = 0}, ref){
+const resident = forwardRef(function Resident({ resident, position, onMove, onDragEnd, onClick, canDrag = true, playableAreaPercent = 100, playableAreaOffset = 0}, ref){
     const internalRef = useRef(null);
 
     const setRef = (el) => {
@@ -15,10 +15,11 @@ const coinling = forwardRef(function Coinling({ coinling, position, onMove, onDr
 
     const hasMovedRef = useRef(false);
     const suppressClickRef = useRef(false);
+    const rafRef = useRef(null);
 
     const { paused } = position;
 
-    // handles when coinling is clicked 
+    // handles when resident is clicked 
     const handleMouseDown = (e) => {
         // prevents drag if zoomed in (if canDrag = false then is zoomed in)
         if (!canDrag) return;
@@ -36,30 +37,37 @@ const coinling = forwardRef(function Coinling({ coinling, position, onMove, onDr
         suppressClickRef.current = false;
     }
 
-    // logic for dragging and dropping coinlings
+    // logic for dragging and dropping residents
     useEffect(() => {
         const handleMouseMove = (e) => {
             if(!dragging) return;
 
             hasMovedRef.current = true;
 
-            // keeps coinling draggable inside field boundaries only
-            const field = document.querySelector(".field");
-            if(!field) return;
+            // throttle updates using requestAnimationFrame
+            if (rafRef.current) return;
 
-            const rect = field.getBoundingClientRect();
+            rafRef.current = requestAnimationFrame(() => {
+                rafRef.current = null;
 
-            const mouseX = (e.clientX - rect.left - offset.x) / rect.width;
-            const mouseY = (e.clientY - rect.top - offset.y) / rect.height;
+                // keeps resident draggable inside field boundaries only
+                const field = document.querySelector(".field");
+                if(!field) return;
 
-            const newLeftPercent = mouseX * 100;
-            const newTopPercent = mouseY * 100;
+                const rect = field.getBoundingClientRect();
 
-            // allow free dragging without constraints
-            onMove(newLeftPercent, newTopPercent);
+                const mouseX = (e.clientX - rect.left - offset.x) / rect.width;
+                const mouseY = (e.clientY - rect.top - offset.y) / rect.height;
+
+                const newLeftPercent = mouseX * 100;
+                const newTopPercent = mouseY * 100;
+
+                // allow free dragging without constraints
+                onMove(newLeftPercent, newTopPercent);
+            });
         };
 
-        // drop coinling
+        // drop resident
         const handleMouseUp = () => {
             if(dragging){
                 const moved = !!hasMovedRef.current;
@@ -93,6 +101,9 @@ const coinling = forwardRef(function Coinling({ coinling, position, onMove, onDr
         return () => {
             document.removeEventListener("mousemove", handleMouseMove);
             document.removeEventListener("mouseup", handleMouseUp);
+            if (rafRef.current) {
+                cancelAnimationFrame(rafRef.current);
+            }
         };
     }, [dragging, offset, onMove, onDragEnd, playableAreaPercent, playableAreaOffset]);
 
@@ -122,9 +133,9 @@ const coinling = forwardRef(function Coinling({ coinling, position, onMove, onDr
         >
             <img
                 ref={setRef}
-                src={coinling.sprite}
-                alt="coinling"
-                className={`coinling ${isMoving ? "coinling-moving" : ""} ${facingRight ? "facing-right" : ""}`}
+                src={resident.sprite}
+                alt="resident"
+                className={`resident ${isMoving ? "resident-moving" : ""} ${facingRight ? "facing-right" : ""}`}
                 style={{
                     position: "relative",
                     width: "auto",
@@ -138,4 +149,4 @@ const coinling = forwardRef(function Coinling({ coinling, position, onMove, onDr
     );
 });
 
-export default coinling;
+export default resident;

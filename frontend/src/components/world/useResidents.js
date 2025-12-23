@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react"
 
-export default function useCoinlings(count, playableAreaPercent = 100, playableAreaOffset = 0){
+export default function useResidents(count, playableAreaPercent = 100, playableAreaOffset = 0){
     const [positions, setPositions] = useState([]);
-    const coinlingSize = 5;
+    const residentSize = 5;
 
     // calculate constraints for movement within accessible area
     const minPos = playableAreaOffset;
@@ -18,8 +18,8 @@ export default function useCoinlings(count, playableAreaPercent = 100, playableA
         let targetTop, targetLeft, distance;
         
         do {
-            targetTop = minPos + Math.random() * (playableAreaPercent - coinlingSize);
-            targetLeft = minPos + Math.random() * (playableAreaPercent - coinlingSize);
+            targetTop = minPos + Math.random() * (playableAreaPercent - residentSize);
+            targetLeft = minPos + Math.random() * (playableAreaPercent - residentSize);
             
             const dx = targetLeft - currentLeft;
             const dy = targetTop - currentTop;
@@ -34,14 +34,14 @@ export default function useCoinlings(count, playableAreaPercent = 100, playableA
         return { targetTop, targetLeft, facingRight };
     };
 
-    // initializes position data for each coinling, runs everytime count changes
+    // initializes position data for each resident, runs everytime count changes
     useEffect(() => {
         const newPositions = [];
         for(let i = 0; i < count; i++){
-            // determines where coinling will start (random within accessible area)
-            const startTop = minPos + Math.random() * (playableAreaPercent - coinlingSize);
-            const startleft = minPos + Math.random() * (playableAreaPercent - coinlingSize);
-            // determines where coinling should move (random within accessible area, with minimum distance)
+            // determines where resident will start (random within accessible area)
+            const startTop = minPos + Math.random() * (playableAreaPercent - residentSize);
+            const startleft = minPos + Math.random() * (playableAreaPercent - residentSize);
+            // determines where resident should move (random within accessible area, with minimum distance)
             const { targetTop, targetLeft, facingRight } = generateTarget(startleft, startTop);
 
             newPositions.push({
@@ -58,12 +58,12 @@ export default function useCoinlings(count, playableAreaPercent = 100, playableA
         setPositions(newPositions);
     }, [count, playableAreaPercent, playableAreaOffset]);
 
-    // movement logic
+    // movement logic - only reinitialize when count changes
     useEffect(() => {
         const intervals = [];
 
-        positions.forEach((_, index) => {
-            // run for each coinling, not optimized for > 100 
+        for (let index = 0; index < count; index++) {
+            // run for each resident, not optimized for > 100 
             const move = () => {
                 setPositions((prev) => 
                     prev.map((p, i) => {
@@ -109,11 +109,11 @@ export default function useCoinlings(count, playableAreaPercent = 100, playableA
                         const stepX = (dx / distance) * speed;
                         const stepY = (dy / distance) * speed;
 
-                        // keeps coinling inside accessible area
+                        // keeps resident inside accessible area
                         return {
                             ...p,
-                            top: Math.min(Math.max(p.top + stepY, minPos), maxPos - coinlingSize),
-                            left: Math.min(Math.max(p.left + stepX, minPos), maxPos - coinlingSize),
+                            top: Math.min(Math.max(p.top + stepY, minPos), maxPos - residentSize),
+                            left: Math.min(Math.max(p.left + stepX, minPos), maxPos - residentSize),
                         };
                     })
                 );
@@ -123,11 +123,11 @@ export default function useCoinlings(count, playableAreaPercent = 100, playableA
             const delay = Math.random() * 500;
             const interval = setInterval(move, 50 + delay);
             intervals.push(interval);
-        });
+        }
 
         // cleanup
         return () => intervals.forEach(clearInterval);
-    }, [positions, minPos, maxPos, playableAreaPercent, coinlingSize]);
+    }, [count, minPos, maxPos, playableAreaPercent, residentSize]);
 
     return{positions, setPositions};
 }

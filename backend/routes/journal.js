@@ -1,5 +1,5 @@
 import express from "express"
-import Coinling from "../schemas/Coinling.js"
+import Resident from "../schemas/Resident.js"
 import { protect } from "../middleware/authm.js"
 import fs from "fs"
 import path from "path"
@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
 router.get("/sprites", async (req, res) => {
     try {
 
-        const spritesDir = path.join(__dirname, "../../frontend/public/sprites/coinling-sprites");
+        const spritesDir = path.join(__dirname, "../../frontend/public/sprites/resident-sprites");
         const rarities = ["common", "rare", "legendary"];
         const allSprites = {};
 
@@ -22,7 +22,7 @@ router.get("/sprites", async (req, res) => {
             if (fs.existsSync(rarityDir)) {
                 const files = fs.readdirSync(rarityDir)
                     .filter(file => file.endsWith('.png'))
-                    .map(file => `/sprites/coinling-sprites/${rarity}/${file}`);
+                    .map(file => `/sprites/resident-sprites/${rarity}/${file}`);
                 allSprites[rarity] = files;
             } else {
                 allSprites[rarity] = [];
@@ -38,8 +38,8 @@ router.get("/sprites", async (req, res) => {
 // get user's unlocked sprites
 router.get("/unlocked", protect, async (req, res) => {
     try {
-        // get distinct sprites from user's coinlings (both dead and alive)
-        const unlocked = await Coinling.distinct("sprite", { user: req.user });
+        // get distinct sprites from user's residents (both dead and alive)
+        const unlocked = await Resident.distinct("sprite", { user: req.user });
         
         res.json({ unlocked });
     } catch (err) {
